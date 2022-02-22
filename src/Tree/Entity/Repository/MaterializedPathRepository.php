@@ -147,7 +147,6 @@ class MaterializedPathRepository extends AbstractTreeRepository
     {
         $meta = $this->getClassMetadata();
         $config = $this->listener->getConfiguration($this->_em, $meta->getName());
-        $separator = addcslashes($config['path_separator'], '%');
         $alias = 'materialized_path_entity';
         $path = $config['path'];
         $qb = $this->getQueryBuilder()
@@ -159,6 +158,8 @@ class MaterializedPathRepository extends AbstractTreeRepository
         if (is_a($node, $meta->getName())) {
             $node = new EntityWrapper($node, $this->_em);
             $nodePath = $node->getPropertyValue($path);
+            $isRootPath = $config['path_separator'] === $nodePath;
+            $separator = $isRootPath ? '' : addcslashes($config['path_separator'], '%');
             $expr = $qb->expr()->andx()->add(
                 $qb->expr()->like(
                     $alias.'.'.$path,
