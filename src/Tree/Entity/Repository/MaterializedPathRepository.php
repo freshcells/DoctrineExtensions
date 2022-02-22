@@ -102,6 +102,9 @@ class MaterializedPathRepository extends AbstractTreeRepository
                 $paths[] = $nodePath;
                 $separatorMatchOffset = $nodePathLength;
             } elseif (0 === $separatorPos) {
+                if ($config['path_starts_with_separator']) {
+                    $paths[] = $config['path_separator'];
+                }
                 // path starts with separator, continue
                 $separatorMatchOffset = 1;
             } else {
