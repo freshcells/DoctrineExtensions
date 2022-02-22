@@ -31,19 +31,17 @@ class MaterializedPath extends AbstractMaterializedPath
 
         $path = addcslashes($wrapped->getPropertyValue($config['path']), '%');
 
-        $separator = $config['path_ends_with_separator'] ? null : $config['path_separator'];
-
         // Remove node's children
         $qb = $om->createQueryBuilder();
         $qb->select('e')
             ->from($config['useObjectClass'], 'e')
-            ->where($qb->expr()->like('e.'.$config['path'], $qb->expr()->literal($path.$separator.'%')));
+            ->where($qb->expr()->like('e.'.$config['path'], $qb->expr()->literal($path.'%')));
 
         if (isset($config['level'])) {
             $lvlField = $config['level'];
             $lvl = $wrapped->getPropertyValue($lvlField);
-            if (!empty($lvl)) {
-                $qb->andWhere($qb->expr()->gt('e.'.$lvlField, $qb->expr()->literal($lvl)));
+            if (!empty($lvl) && $meta->hasField($lvlField)) {
+                $qb->andWhere($qb->expr()->gt('e.' . $lvlField, $qb->expr()->literal($lvl)));
             }
         }
 
