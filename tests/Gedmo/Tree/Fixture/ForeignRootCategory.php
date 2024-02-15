@@ -20,6 +20,7 @@ use Gedmo\Tree\Entity\Repository\NestedTreeRepository;
 
 /**
  * @ORM\Entity(repositoryClass="Gedmo\Tree\Entity\Repository\NestedTreeRepository")
+ *
  * @Gedmo\Tree(type="nested")
  */
 #[ORM\Entity(repositoryClass: NestedTreeRepository::class)]
@@ -39,17 +40,16 @@ class ForeignRootCategory
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="title", type="string", length=64)
      */
     #[ORM\Column(name: 'title', type: Types::STRING, length: 64)]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeLeft
+     *
      * @ORM\Column(name="lft", type="integer")
      */
     #[ORM\Column(name: 'lft', type: Types::INTEGER)]
@@ -60,6 +60,7 @@ class ForeignRootCategory
      * @var int|null
      *
      * @Gedmo\TreeRight
+     *
      * @ORM\Column(name="rgt", type="integer")
      */
     #[ORM\Column(name: 'rgt', type: Types::INTEGER)]
@@ -67,23 +68,23 @@ class ForeignRootCategory
     private $rgt;
 
     /**
-     * @var self|null
-     *
      * @Gedmo\TreeParent
+     *
      * @ORM\ManyToOne(targetEntity="ForeignRootCategory", inversedBy="children")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
+     *     @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
      * })
      */
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
     #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[Gedmo\TreeParent]
-    private $parent;
+    private ?ForeignRootCategory $parent = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeRoot(identifierMethod="getRoot")
+     *
      * @ORM\Column(type="integer")
      */
     #[ORM\Column(type: Types::INTEGER)]
@@ -94,6 +95,7 @@ class ForeignRootCategory
      * @var int|null
      *
      * @Gedmo\TreeLevel
+     *
      * @ORM\Column(name="lvl", type="integer")
      */
     #[ORM\Column(name: 'lvl', type: Types::INTEGER)]
@@ -128,7 +130,7 @@ class ForeignRootCategory
         return $this->title;
     }
 
-    public function setParent(self $parent = null): void
+    public function setParent(?self $parent = null): void
     {
         $this->parent = $parent;
     }
@@ -166,6 +168,9 @@ class ForeignRootCategory
         return $this->children;
     }
 
+    /**
+     * @param Collection<int, self> $children
+     */
     public function setChildren(Collection $children): void
     {
         $this->children = $children;

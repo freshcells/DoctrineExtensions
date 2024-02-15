@@ -16,13 +16,14 @@ use Doctrine\ORM\Event\LoadClassMetadataEventArgs;
 use Gedmo\Mapping\MappedEventSubscriber;
 use Gedmo\Tests\Mapping\Fixture\User;
 use Gedmo\Tests\Mapping\Mock\Extension\Encoder\EncoderListener;
+use Gedmo\Tests\Mapping\Mock\Extension\Encoder\Mapping\Event\Adapter\ORM;
 use Gedmo\Tests\Tool\BaseTestCaseORM;
 
 final class ExtensionORMTest extends BaseTestCaseORM
 {
-    public const USER = User::class;
+    private const USER = User::class;
 
-    private $encoderListener;
+    private EncoderListener $encoderListener;
 
     protected function setUp(): void
     {
@@ -37,7 +38,6 @@ final class ExtensionORMTest extends BaseTestCaseORM
 
     public function testExtensionMetadata(): void
     {
-        $meta = $this->em->getClassMetadata(self::USER);
         $config = $this->encoderListener->getConfiguration($this->em, self::USER);
         static::assertArrayHasKey('encode', $config);
         static::assertCount(2, $config['encode']);
@@ -58,6 +58,7 @@ final class ExtensionORMTest extends BaseTestCaseORM
         $user = new User();
         $user->setName('encode me');
         $user->setPassword('secret');
+        $user->setUsername('some_username');
         $this->em->persist($user);
         $this->em->flush();
 
@@ -79,7 +80,7 @@ final class ExtensionORMTest extends BaseTestCaseORM
             $this->encoderListener,
             $loadClassMetadataEventArgs
         );
-        static::assertInstanceOf(\Gedmo\Tests\Mapping\Mock\Extension\Encoder\Mapping\Event\Adapter\ORM::class, $eventAdapter);
+        static::assertInstanceOf(ORM::class, $eventAdapter);
     }
 
     protected function getUsedEntityFixtures(): array

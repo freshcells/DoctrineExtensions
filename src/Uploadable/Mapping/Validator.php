@@ -20,6 +20,8 @@ use Gedmo\Uploadable\FilenameGenerator\FilenameGeneratorInterface;
  *
  * @author Gustavo Falco <comfortablynumb84@gmail.com>
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
+ *
+ * @final since gedmo/doctrine-extensions 3.11
  */
 class Validator
 {
@@ -42,7 +44,7 @@ class Validator
     /**
      * List of types which are valid for UploadableFileMimeType field
      *
-     * @var array
+     * @var string[]
      */
     public static $validFileMimeTypeTypes = [
         'string',
@@ -51,7 +53,7 @@ class Validator
     /**
      * List of types which are valid for UploadableFileName field
      *
-     * @var array
+     * @var string[]
      */
     public static $validFileNameTypes = [
         'string',
@@ -60,7 +62,7 @@ class Validator
     /**
      * List of types which are valid for UploadableFilePath field
      *
-     * @var array
+     * @var string[]
      */
     public static $validFilePathTypes = [
         'string',
@@ -69,7 +71,7 @@ class Validator
     /**
      * List of types which are valid for UploadableFileSize field for ORM
      *
-     * @var array
+     * @var string[]
      */
     public static $validFileSizeTypes = [
         'decimal',
@@ -78,7 +80,7 @@ class Validator
     /**
      * List of types which are valid for UploadableFileSize field for ODM
      *
-     * @var array
+     * @var string[]
      */
     public static $validFileSizeTypesODM = [
         'float',
@@ -180,7 +182,11 @@ class Validator
     }
 
     /**
+     * @param array<string, mixed> $config
+     *
      * @return void
+     *
+     * @todo Stop receiving by reference the `$config` parameter and use `array` as return type declaration
      */
     public static function validateConfiguration(ClassMetadata $meta, array &$config)
     {
@@ -241,5 +247,7 @@ class Validator
                     throw new InvalidMappingException(sprintf('Class "%s" needs a valid value for filenameGenerator. It can be: SHA1, ALPHANUMERIC, NONE or a class implementing %s.', $meta->getName(), FilenameGeneratorInterface::class));
                 }
         }
+
+        return $config;
     }
 }

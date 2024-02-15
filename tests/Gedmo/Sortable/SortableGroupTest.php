@@ -15,6 +15,7 @@ use Doctrine\Common\EventManager;
 use Gedmo\Sortable\SortableListener;
 use Gedmo\Tests\Sortable\Fixture\Category;
 use Gedmo\Tests\Sortable\Fixture\Item;
+use Gedmo\Tests\Sortable\Fixture\ItemWithDateColumn;
 use Gedmo\Tests\Sortable\Fixture\Transport\Bus;
 use Gedmo\Tests\Sortable\Fixture\Transport\Car;
 use Gedmo\Tests\Sortable\Fixture\Transport\Engine;
@@ -29,19 +30,20 @@ use Gedmo\Tests\Tool\BaseTestCaseORM;
  */
 final class SortableGroupTest extends BaseTestCaseORM
 {
-    public const CAR = Car::class;
-    public const BUS = Bus::class;
-    public const VEHICLE = Vehicle::class;
-    public const ENGINE = Engine::class;
-    public const RESERVATION = Reservation::class;
-    public const ITEM = Item::class;
-    public const CATEGORY = Category::class;
+    private const CAR = Car::class;
+    private const BUS = Bus::class;
+    private const VEHICLE = Vehicle::class;
+    private const ENGINE = Engine::class;
+    private const RESERVATION = Reservation::class;
+    private const ITEM = Item::class;
+    private const CATEGORY = Category::class;
+    private const ITEM_WITH_DATE_COLUMN = ItemWithDateColumn::class;
 
-    public const SEATS = 3;
+    private const SEATS = 3;
 
-    public const TRAVEL_DATE_FORMAT = 'Y-m-d H:i';
-    public const TODAY = '2013-10-24 12:50';
-    public const TOMORROW = '2013-10-25 12:50';
+    private const TRAVEL_DATE_FORMAT = 'Y-m-d H:i';
+    private const TODAY = '2013-10-24 12:50';
+    private const TOMORROW = '2013-10-25 12:50';
 
     protected function setUp(): void
     {
@@ -89,11 +91,11 @@ final class SortableGroupTest extends BaseTestCaseORM
         $audi80 = $carRepo->findOneBy(['title' => 'Audi-80']);
         static::assertSame(0, $audi80->getSortByEngine());
 
-        //position 1
+        // position 1
         $audi80s = $carRepo->findOneBy(['title' => 'Audi-80s']);
         static::assertSame(1, $audi80s->getSortByEngine());
 
-        //position 2
+        // position 2
         $icarus = $this->em->getRepository(self::BUS)->findOneBy(['title' => 'Icarus']);
         static::assertSame(2, $icarus->getSortByEngine());
 
@@ -157,7 +159,7 @@ final class SortableGroupTest extends BaseTestCaseORM
         static::assertCount(self::SEATS - 1, $bratislavaToday);
         // Test seat numbers
         // Should be [ 0, 1 ]
-        $seats = array_map(static function ($r) { return $r->getSeat(); }, $bratislavaToday);
+        $seats = array_map(static fn ($r) => $r->getSeat(), $bratislavaToday);
         static::assertSame(range(0, self::SEATS - 2), $seats, 'Should be seats [ 0, 1 ] to Bratislava Today');
 
         // Bratislava Tomorrow should have 4 seats
@@ -168,7 +170,7 @@ final class SortableGroupTest extends BaseTestCaseORM
         static::assertCount(self::SEATS + 1, $bratislavaTomorrow);
         // Test seat numbers
         // Should be [ 0, 1, 2, 3 ]
-        $seats = array_map(static function ($r) { return $r->getSeat(); }, $bratislavaTomorrow);
+        $seats = array_map(static fn ($r) => $r->getSeat(), $bratislavaTomorrow);
         static::assertSame(range(0, self::SEATS), $seats, 'Should be seats [ 0, 1, 2, 3 ] to Bratislava Tomorrow');
 
         // Prague Today should have 3 seats
@@ -178,7 +180,7 @@ final class SortableGroupTest extends BaseTestCaseORM
         ], ['seat' => 'asc']);
         static::assertCount(self::SEATS, $pragueToday);
         // Test seat numbers
-        $seats = array_map(static function ($r) { return $r->getSeat(); }, $pragueToday);
+        $seats = array_map(static fn ($r) => $r->getSeat(), $pragueToday);
         static::assertSame(range(0, self::SEATS - 1), $seats, 'Should be seats [ 0, 1, 2 ] to Prague Today');
     }
 
@@ -239,6 +241,34 @@ final class SortableGroupTest extends BaseTestCaseORM
         static::assertSame(30, $position);
     }
 
+    public function testChangePositionWithDateColumn(): void
+    {
+        for ($i = 0; $i < 6; ++$i) {
+            $object = new ItemWithDateColumn();
+            $today = new \DateTime('2022-05-22');
+            $object->setDate($today);
+            $object->setPosition($i);
+            $this->em->persist($object);
+        }
+        $this->em->flush();
+
+        $repo = $this->em->getRepository(self::ITEM_WITH_DATE_COLUMN);
+
+        /** @var ItemWithDateColumn $testItem */
+        $testItem = $repo->findOneBy(['id' => 5]);
+        $testItem->setPosition(1);
+
+        $this->em->persist($testItem);
+        $this->em->flush();
+
+        /** @var ItemWithDateColumn $freshItem */
+        $freshItem = $repo->findOneBy(['id' => 5]);
+        /** @var ItemWithDateColumn $freshPreviousItem */
+        $freshPreviousItem = $repo->findOneBy(['id' => 2]);
+        static::assertSame(1, $freshItem->getPosition());
+        static::assertSame(2, $freshPreviousItem->getPosition());
+    }
+
     protected function getUsedEntityFixtures(): array
     {
         return [
@@ -249,6 +279,7 @@ final class SortableGroupTest extends BaseTestCaseORM
             self::RESERVATION,
             self::ITEM,
             self::CATEGORY,
+            self::ITEM_WITH_DATE_COLUMN,
         ];
     }
 

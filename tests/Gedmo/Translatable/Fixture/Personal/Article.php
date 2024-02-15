@@ -11,12 +11,15 @@ declare(strict_types=1);
 
 namespace Gedmo\Tests\Translatable\Fixture\Personal;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 
 /**
  * @Gedmo\TranslationEntity(class="Gedmo\Tests\Translatable\Fixture\Personal\PersonalArticleTranslation")
+ *
  * @ORM\Entity
  */
 #[ORM\Entity]
@@ -37,19 +40,30 @@ class Article
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(length=128)
      */
     #[ORM\Column(length: 128)]
     #[Gedmo\Translatable]
-    private $title;
+    private ?string $title = null;
 
     /**
+     * @var Collection<int, PersonalArticleTranslation>
+     *
      * @ORM\OneToMany(targetEntity="PersonalArticleTranslation", mappedBy="object")
      */
     #[ORM\OneToMany(targetEntity: PersonalArticleTranslation::class, mappedBy: 'object')]
     private $translations;
 
-    public function getTranslations()
+    public function __construct()
+    {
+        $this->translations = new ArrayCollection();
+    }
+
+    /**
+     * @return Collection<int, PersonalArticleTranslation>
+     */
+    public function getTranslations(): Collection
     {
         return $this->translations;
     }
@@ -72,7 +86,7 @@ class Article
         $this->title = $title;
     }
 
-    public function getTitle()
+    public function getTitle(): ?string
     {
         return $this->title;
     }

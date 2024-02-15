@@ -28,13 +28,14 @@ use Gedmo\Translatable\TranslatableListener;
  */
 final class TranslatableTest extends BaseTestCaseORM
 {
-    public const ARTICLE = Article::class;
-    public const SPORT = Sport::class;
-    public const COMMENT = Comment::class;
-    public const TRANSLATION = Translation::class;
+    private const ARTICLE = Article::class;
+    private const SPORT = Sport::class;
+    private const COMMENT = Comment::class;
+    private const TRANSLATION = Translation::class;
 
-    private $articleId;
-    private $translatableListener;
+    private ?int $articleId = null;
+
+    private TranslatableListener $translatableListener;
 
     protected function setUp(): void
     {
@@ -118,7 +119,7 @@ final class TranslatableTest extends BaseTestCaseORM
 
         $comments = $article->getComments();
         static::assertCount(2, $comments);
-        foreach ($comments as $num => $comment) {
+        foreach ($comments as $comment) {
             $translations = $repo->findTranslations($comment);
 
             static::assertCount(0, $translations);
@@ -136,12 +137,10 @@ final class TranslatableTest extends BaseTestCaseORM
         $qb = $this->em->createQueryBuilder();
         $qb->select('art')
             ->from(self::ARTICLE, 'art')
-            ->where('art.id = :id');
+            ->where('art.id = :id')
+            ->setParameter('id', $article->getId());
         $q = $qb->getQuery();
-        $result = $q->execute(
-            ['id' => $article->getId()],
-            \Doctrine\ORM\Query::HYDRATE_ARRAY
-        );
+        $result = $q->getArrayResult();
         static::assertCount(1, $result);
         static::assertSame('title in en', $result[0]['title']);
         static::assertSame('content in en', $result[0]['content']);

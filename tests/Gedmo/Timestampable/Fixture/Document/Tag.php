@@ -16,7 +16,7 @@ use Doctrine\ODM\MongoDB\Types\Type as MongoDBType;
 use Gedmo\Mapping\Annotation as Gedmo;
 
 /**
- * @ODM\EmbeddedDocument()
+ * @ODM\EmbeddedDocument
  */
 #[ODM\EmbeddedDocument]
 class Tag
@@ -31,6 +31,7 @@ class Tag
 
     /**
      * @ODM\Field(type="date")
+     *
      * @Gedmo\Timestampable(on="create")
      *
      * @var \DateTime
@@ -41,6 +42,7 @@ class Tag
 
     /**
      * @ODM\Field(type="date")
+     *
      * @Gedmo\Timestampable
      *
      * @var \DateTime

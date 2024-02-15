@@ -21,15 +21,17 @@ use Gedmo\Mapping\Driver\Xml as BaseXml;
  *
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
  * @author Miha Vrhovnik <miha.vrhovnik@gmail.com>
+ *
+ * @internal
  */
 class Xml extends BaseXml
 {
     /**
      * List of types which are valid for timestamp
      *
-     * @var array
+     * @var string[]
      */
-    private $validTypes = [
+    private const VALID_TYPES = [
         'date',
         'date_immutable',
         'time',
@@ -77,9 +79,6 @@ class Xml extends BaseXml
                         }
                         $trackedFieldAttribute = $this->_getAttribute($data, 'field');
                         $valueAttribute = $this->_isAttributeSet($data, 'value') ? $this->_getAttribute($data, 'value') : null;
-                        if (is_array($trackedFieldAttribute) && null !== $valueAttribute) {
-                            throw new InvalidMappingException('Timestampable extension does not support multiple value changeset detection yet.');
-                        }
                         $field = [
                             'field' => $field,
                             'trackedField' => $trackedFieldAttribute,
@@ -90,6 +89,8 @@ class Xml extends BaseXml
                 }
             }
         }
+
+        return $config;
     }
 
     /**
@@ -104,6 +105,6 @@ class Xml extends BaseXml
     {
         $mapping = $meta->getFieldMapping($field);
 
-        return $mapping && in_array($mapping['type'], $this->validTypes, true);
+        return $mapping && in_array($mapping['type'], self::VALID_TYPES, true);
     }
 }

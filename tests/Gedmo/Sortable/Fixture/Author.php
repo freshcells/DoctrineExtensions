@@ -38,30 +38,32 @@ class Author
      * @ORM\Column(name="name", type="string")
      */
     #[ORM\Column(name: 'name', type: Types::STRING)]
-    private $name;
+    private ?string $name = null;
 
     /**
      * @Gedmo\SortableGroup
+     *
      * @ORM\ManyToOne(targetEntity="Paper", inversedBy="authors")
      */
     #[Gedmo\SortableGroup]
     #[ORM\ManyToOne(targetEntity: Paper::class, inversedBy: 'authors')]
-    private $paper;
+    private ?Paper $paper = null;
 
     /**
      * @Gedmo\SortablePosition
+     *
      * @ORM\Column(name="position", type="integer")
      */
     #[Gedmo\SortablePosition]
     #[ORM\Column(name: 'position', type: Types::INTEGER)]
-    private $position;
+    private ?int $position = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getName()
+    public function getName(): ?string
     {
         return $this->name;
     }
@@ -71,22 +73,22 @@ class Author
         $this->name = $name;
     }
 
-    public function getPaper()
+    public function getPaper(): ?Paper
     {
         return $this->paper;
     }
 
-    public function setPaper($paper): void
+    public function setPaper(?Paper $paper): void
     {
         $this->paper = $paper;
     }
 
-    public function getPosition()
+    public function getPosition(): ?int
     {
         return $this->position;
     }
 
-    public function setPosition($position): void
+    public function setPosition(?int $position): void
     {
         $this->position = $position;
     }

@@ -18,6 +18,7 @@ use Gedmo\Tree\Document\MongoDB\Repository\MaterializedPathRepository;
 
 /**
  * @Mongo\Document(repositoryClass="Gedmo\Tree\Document\MongoDB\Repository\MaterializedPathRepository")
+ *
  * @Gedmo\Tree(type="materializedPath")
  */
 #[Mongo\Document(repositoryClass: MaterializedPathRepository::class)]
@@ -33,19 +34,19 @@ class Category
     private $id;
 
     /**
-     * @var string|null
-     *
      * @Mongo\Field(type="string")
+     *
      * @Gedmo\TreePathSource
      */
     #[Mongo\Field(type: Type::STRING)]
     #[Gedmo\TreePathSource]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @var string|null
      *
      * @Mongo\Field(type="string")
+     *
      * @Gedmo\TreePath(separator="|")
      */
     #[Mongo\Field(type: Type::STRING)]
@@ -53,19 +54,19 @@ class Category
     private $path;
 
     /**
-     * @var self|null
-     *
      * @Gedmo\TreeParent
+     *
      * @Mongo\ReferenceOne(targetDocument="Gedmo\Tests\Tree\Fixture\Document\Category")
      */
     #[Mongo\ReferenceOne(targetDocument: self::class)]
     #[Gedmo\TreeParent]
-    private $parent;
+    private ?Category $parent = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeLevel
+     *
      * @Mongo\Field(type="int")
      */
     #[Mongo\Field(type: Type::INT)]
@@ -87,7 +88,7 @@ class Category
         return $this->title;
     }
 
-    public function setParent(self $parent = null): void
+    public function setParent(?self $parent = null): void
     {
         $this->parent = $parent;
     }

@@ -24,7 +24,9 @@ class Identifier
      * @var string|null
      *
      * @ORM\Id
+     *
      * @Gedmo\Slug(separator="_", updatable=false, fields={"title"})
+     *
      * @ORM\Column(length=32, unique=true)
      */
     #[ORM\Id]
@@ -33,12 +35,10 @@ class Identifier
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(length=32)
      */
     #[ORM\Column(length: 32)]
-    private $title;
+    private ?string $title = null;
 
     public function getId(): ?string
     {

@@ -12,8 +12,10 @@ declare(strict_types=1);
 namespace Gedmo\Tests\Tree;
 
 use Doctrine\Common\EventManager;
+use Gedmo\Exception\InvalidArgumentException;
 use Gedmo\Tests\Tool\BaseTestCaseORM;
 use Gedmo\Tests\Tree\Fixture\RootCategory;
+use Gedmo\Tree\Entity\Repository\NestedTreeRepository;
 use Gedmo\Tree\TreeListener;
 
 /**
@@ -23,7 +25,7 @@ use Gedmo\Tree\TreeListener;
  */
 final class NestedTreeRootRepositoryTest extends BaseTestCaseORM
 {
-    public const CATEGORY = RootCategory::class;
+    private const CATEGORY = RootCategory::class;
 
     protected function setUp(): void
     {
@@ -129,7 +131,7 @@ final class NestedTreeRootRepositoryTest extends BaseTestCaseORM
         $repo = $this->em->getRepository(self::CATEGORY);
         $food = $repo->findOneBy(['title' => 'Food']);
         $decorate = true;
-        $defaultHtmlTree = $repo->childrenHierarchy($food, false, compact('decorate'));
+        $defaultHtmlTree = $repo->childrenHierarchy($food, false, ['decorate' => $decorate]);
 
         static::assertSame(
             '<ul><li>Fruits</li><li>Vegitables<ul><li>Carrots</li><li>Potatoes</li></ul></li></ul>',
@@ -137,14 +139,15 @@ final class NestedTreeRootRepositoryTest extends BaseTestCaseORM
         );
 
         // custom title
-        $nodeDecorator = static function ($node) {
-            return '<span>'.$node['title'].'</span>';
-        };
+        $nodeDecorator = static fn ($node) => '<span>'.$node['title'].'</span>';
 
         $decoratedHtmlTree = $repo->childrenHierarchy(
             $food,
             false,
-            compact('decorate', 'nodeDecorator')
+            [
+                'decorate' => $decorate,
+                'nodeDecorator' => $nodeDecorator,
+            ]
         );
 
         static::assertSame(
@@ -156,34 +159,41 @@ final class NestedTreeRootRepositoryTest extends BaseTestCaseORM
         $rootClose = '';
         $childOpen = '';
         $childClose = '';
-        $nodeDecorator = static function ($node) {
-            return str_repeat('-', $node['level']).$node['title']."\n";
-        };
+        $nodeDecorator = static fn ($node) => str_repeat('-', $node['level'] - 1).$node['title']."\n";
 
         $decoratedCliTree = $repo->childrenHierarchy(
             $food,
             false,
-            compact('decorate', 'nodeDecorator', 'rootOpen', 'rootClose', 'childOpen', 'childClose')
+            [
+                'decorate' => $decorate,
+                'nodeDecorator' => $nodeDecorator,
+                'rootOpen' => $rootOpen,
+                'rootClose' => $rootClose,
+                'childOpen' => $childOpen,
+                'childClose' => $childClose,
+            ]
         );
         static::assertSame(
             "-Fruits\n-Vegitables\n--Carrots\n--Potatoes\n",
             $decoratedCliTree
         );
 
-        $rootOpen = static function () {return '<ul class="group">'; };
+        $rootOpen = static fn () => '<ul class="group">';
         // check support of the closures in rootClose
-        $rootClose = static function () {return '</ul><!--rootCloseClosure-->'; };
-        $childOpen = static function (&$node) {
-            return '<li class="depth'.$node['level'].'">';
-        };
+        $rootClose = static fn () => '</ul><!--rootCloseClosure-->';
+        $childOpen = static fn (&$node) => '<li class="depth'.($node['level'] - 1).'">';
         // check support of the closures in childClose
-        $childClose = static function (&$node) {
-            return '</li><!--childCloseClosure-->';
-        };
+        $childClose = static fn (&$node) => '</li><!--childCloseClosure-->';
         $decoratedHtmlTree = $repo->childrenHierarchy(
             $food,
             false,
-            compact('decorate', 'rootOpen', 'rootClose', 'childOpen', 'childClose')
+            [
+                'decorate' => $decorate,
+                'rootOpen' => $rootOpen,
+                'rootClose' => $rootClose,
+                'childOpen' => $childOpen,
+                'childClose' => $childClose,
+            ]
         );
 
         static::assertSame(
@@ -238,8 +248,36 @@ final class NestedTreeRootRepositoryTest extends BaseTestCaseORM
         static::assertNull($node->getParent());
     }
 
+    /**
+     * @dataProvider invalidStringMethods
+     *
+     * @param mixed $stringMethod
+     */
+    public function testGetPathAsStringWithInvalidStringMethod($stringMethod): void
+    {
+        $repo = $this->em->getRepository(self::CATEGORY);
+        $carrots = $repo->findOneBy(['title' => 'Carrots']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $repo->getPathAsString($carrots, [
+            'stringMethod' => $stringMethod,
+        ]);
+    }
+
+    /**
+     * @phpstan-return iterable<int, array{0: string|int|null}>
+     */
+    public static function invalidStringMethods(): iterable
+    {
+        yield [null];
+        yield [123];
+        yield ['nonExistingMethod'];
+        yield [''];
+    }
+
     public function testShouldHandleBasicRepositoryMethods(): void
     {
+        /** @var NestedTreeRepository<RootCategory> $repo */
         $repo = $this->em->getRepository(self::CATEGORY);
         $carrots = $repo->findOneBy(['title' => 'Carrots']);
 
@@ -248,6 +286,17 @@ final class NestedTreeRootRepositoryTest extends BaseTestCaseORM
         static::assertSame('Food', $path[0]->getTitle());
         static::assertSame('Vegitables', $path[1]->getTitle());
         static::assertSame('Carrots', $path[2]->getTitle());
+
+        $path = $repo->getPath($carrots, ['includeNode' => false]);
+        static::assertCount(2, $path);
+        static::assertSame('Food', $path[0]->getTitle());
+        static::assertSame('Vegitables', $path[1]->getTitle());
+        $path = $repo->getPathAsString($carrots, [
+            'includeNode' => true,
+            'separator' => '-->',
+            'stringMethod' => 'getTitle',
+        ]);
+        static::assertSame('Food-->Vegitables-->Carrots', $path);
 
         $vegies = $repo->findOneBy(['title' => 'Vegitables']);
         $childCount = $repo->childCount($vegies);
@@ -265,11 +314,22 @@ final class NestedTreeRootRepositoryTest extends BaseTestCaseORM
 
         $childCount = $repo->childCount(null, true);
         static::assertSame(2, $childCount);
+
+        // all children of node, including the root, ordered by two fields
+        $food = $repo->findOneBy(['title' => 'Food']);
+        $children = $repo->children($food, false, ['level', 'title'], ['asc', 'desc'], true);
+        static::assertCount(5, $children);
+        static::assertSame('Food', $children[0]->getTitle());
+        static::assertSame('Vegitables', $children[1]->getTitle());
+        static::assertSame('Fruits', $children[2]->getTitle());
+        static::assertSame('Potatoes', $children[3]->getTitle());
+        static::assertSame('Carrots', $children[4]->getTitle());
     }
 
     public function testShouldHandleAdvancedRepositoryFunctions(): void
     {
         $this->populateMore();
+        /** @var NestedTreeRepository<RootCategory> $repo */
         $repo = $this->em->getRepository(self::CATEGORY);
 
         // verification
@@ -287,6 +347,12 @@ final class NestedTreeRootRepositoryTest extends BaseTestCaseORM
         static::assertCount(2, $errors);
         static::assertSame('index [4], missing on tree root: 1', $errors[0]);
         static::assertSame('index [5], duplicate on tree root: 1', $errors[1]);
+
+        // verification of single tree
+        $errors = $repo->verify(['treeRootNode' => $repo->find(2)]);
+        static::assertTrue($errors);
+        $errors = $repo->verify(['treeRootNode' => $repo->find(1)]);
+        static::assertCount(2, $errors);
 
         // test recover functionality
         $repo->recover();
@@ -318,6 +384,41 @@ final class NestedTreeRootRepositoryTest extends BaseTestCaseORM
 
         static::assertSame(9, $onions->getLeft());
         static::assertSame(10, $onions->getRight());
+
+        // reorder (non-recursive)
+
+        $node = $repo->findOneBy(['title' => 'Food']);
+        $repo->reorder($node, 'title', 'DESC', false, false);
+
+        $node = $repo->findOneBy(['title' => 'Vegitables']);
+
+        static::assertSame(2, $node->getLeft());
+        static::assertSame(11, $node->getRight());
+
+        $node = $repo->findOneBy(['title' => 'Fruits']);
+
+        static::assertSame(12, $node->getLeft());
+        static::assertSame(13, $node->getRight());
+
+        $node = $repo->findOneBy(['title' => 'Carrots']);
+
+        static::assertSame(3, $node->getLeft());
+        static::assertSame(4, $node->getRight());
+
+        $node = $repo->findOneBy(['title' => 'Potatoes']);
+
+        static::assertSame(5, $node->getLeft());
+        static::assertSame(6, $node->getRight());
+
+        $node = $repo->findOneBy(['title' => 'Onions']);
+
+        static::assertSame(7, $node->getLeft());
+        static::assertSame(8, $node->getRight());
+
+        $node = $repo->findOneBy(['title' => 'Cabbages']);
+
+        static::assertSame(9, $node->getLeft());
+        static::assertSame(10, $node->getRight());
 
         // reorder
 
@@ -373,6 +474,65 @@ final class NestedTreeRootRepositoryTest extends BaseTestCaseORM
 
         static::assertSame(1, $node->getRoot());
         static::assertSame(1, $node->getParent()->getId());
+
+        // recover with specified order
+
+        $repo->recover([
+            'flush' => true,
+            'treeRootNode' => $repo->find(1),
+            'skipVerify' => true,
+            'sortByField' => 'title',
+            'sortDirection' => 'DESC',
+        ]);
+        static::assertTrue($repo->verify());
+
+        $this->em->clear();
+        $potatoes = $repo->findOneBy(['title' => 'Potatoes']);
+
+        static::assertSame(2, $potatoes->getLeft());
+        static::assertSame(3, $potatoes->getRight());
+
+        // recover with specified order with multiple fields
+
+        $repo->recover([
+            'flush' => true,
+            'treeRootNode' => $repo->find(1),
+            'skipVerify' => true,
+            'sortByField' => [
+                0 => 'title',
+                1 => 'title',
+            ],
+            'sortDirection' => [
+                0 => 'ASC',
+                1 => 'DESC',
+            ],
+        ]);
+        static::assertTrue($repo->verify());
+
+        $this->em->clear();
+        $potatoes = $repo->findOneBy(['title' => 'Potatoes']);
+
+        static::assertSame(8, $potatoes->getLeft());
+        static::assertSame(9, $potatoes->getRight());
+
+        // test fast recover
+
+        $dql = 'UPDATE '.self::CATEGORY.' node';
+        $dql .= ' SET node.lft = 1';
+        $dql .= ' WHERE node.id = 8';
+        $this->em->createQuery($dql)->execute();
+
+        $this->em->clear(); // must clear cached entities
+
+        static::assertGreaterThan(0, $repo->verify());
+
+        $repo->recoverFast([
+            'sortByField' => 'title',
+            'sortDirection' => 'ASC',
+        ]);
+        $this->em->clear(); // must clear cached entities
+
+        static::assertTrue($repo->verify());
     }
 
     public function testShouldRemoveTreeLeafFromTree(): void
@@ -386,7 +546,6 @@ final class NestedTreeRootRepositoryTest extends BaseTestCaseORM
         static::assertNull($repo->find($id));
         $this->em->clear();
 
-        $vegies = $repo->findOneBy(['title' => 'Vegitables']);
         static::assertTrue($repo->verify());
     }
 

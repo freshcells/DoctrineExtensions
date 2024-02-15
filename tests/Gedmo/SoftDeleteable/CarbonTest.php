@@ -22,14 +22,11 @@ use Gedmo\Tests\Tool\BaseTestCaseORM;
 
 final class CarbonTest extends BaseTestCaseORM
 {
-    public const ARTICLE_CLASS = Article::class;
-    public const COMMENT_CLASS = Comment::class;
-    public const SOFT_DELETEABLE_FILTER_NAME = 'soft-deleteable';
+    private const ARTICLE_CLASS = Article::class;
+    private const COMMENT_CLASS = Comment::class;
+    private const SOFT_DELETEABLE_FILTER_NAME = 'soft-deleteable';
 
-    /**
-     * @var SoftDeleteableListener
-     */
-    private $softDeleteableListener;
+    private SoftDeleteableListener $softDeleteableListener;
 
     protected function setUp(): void
     {

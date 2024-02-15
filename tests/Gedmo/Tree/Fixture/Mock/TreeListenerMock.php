@@ -21,7 +21,7 @@ use Gedmo\Tree\TreeListener;
  * @author Gustavo Adrian <comfortablynumb84@gmail.com>
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
  */
-class TreeListenerMock extends TreeListener
+final class TreeListenerMock extends TreeListener
 {
     /**
      * @var bool
@@ -29,7 +29,7 @@ class TreeListenerMock extends TreeListener
     public $releaseLocks = false;
 
     /**
-     * @var Strategy
+     * @var MaterializedPathMock
      */
     protected $strategy;
 

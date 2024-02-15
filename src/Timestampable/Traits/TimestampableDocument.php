@@ -21,8 +21,10 @@ use Gedmo\Mapping\Annotation as Gedmo;
 trait TimestampableDocument
 {
     /**
-     * @var \DateTime
+     * @var \DateTime|null
+     *
      * @Gedmo\Timestampable(on="create")
+     *
      * @ODM\Field(type="date")
      */
     #[Gedmo\Timestampable(on: 'create')]
@@ -30,8 +32,10 @@ trait TimestampableDocument
     protected $createdAt;
 
     /**
-     * @var \DateTime
+     * @var \DateTime|null
+     *
      * @Gedmo\Timestampable(on="update")
+     *
      * @ODM\Field(type="date")
      */
     #[Gedmo\Timestampable(on: 'update')]
@@ -53,7 +57,7 @@ trait TimestampableDocument
     /**
      * Returns createdAt.
      *
-     * @return \DateTime
+     * @return \DateTime|null
      */
     public function getCreatedAt()
     {
@@ -75,7 +79,7 @@ trait TimestampableDocument
     /**
      * Returns updatedAt.
      *
-     * @return \Datetime
+     * @return \Datetime|null
      */
     public function getUpdatedAt()
     {

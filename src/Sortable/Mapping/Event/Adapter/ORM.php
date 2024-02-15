@@ -13,18 +13,22 @@ use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\Mapping\ClassMetadata;
 use Gedmo\Mapping\Event\Adapter\ORM as BaseAdapterORM;
 use Gedmo\Sortable\Mapping\Event\SortableAdapter;
+use Gedmo\Sortable\SortableListener;
 
 /**
  * Doctrine event adapter for ORM adapted
  * for sortable behavior
  *
  * @author Lukas Botsch <lukas.botsch@gmail.com>
+ *
+ * @phpstan-import-type SortableRelocation from SortableListener
  */
 final class ORM extends BaseAdapterORM implements SortableAdapter
 {
     /**
-     * @param ClassMetadata $meta
-     * @param array         $groups
+     * @param array<string, mixed>    $config
+     * @param ClassMetadata           $meta
+     * @param iterable<string, mixed> $groups
      *
      * @return int|null
      */
@@ -35,19 +39,21 @@ final class ORM extends BaseAdapterORM implements SortableAdapter
         $qb = $em->createQueryBuilder();
         $qb->select('MAX(n.'.$config['position'].')')
            ->from($config['useObjectClass'], 'n');
-        $this->addGroupWhere($qb, $groups);
+        $this->addGroupWhere($qb, $meta, $groups);
         $query = $qb->getQuery();
         $query->useQueryCache(false);
         $query->disableResultCache();
-        $res = $query->getResult();
+        $query->setMaxResults(1);
 
-        return $res[0][1];
+        return $query->getSingleScalarResult();
     }
 
     /**
-     * @param array $relocation
-     * @param array $delta
-     * @param array $config
+     * @param array<string, mixed> $relocation
+     * @param array<string, mixed> $delta
+     * @param array<string, mixed> $config
+     *
+     * @phpstan-param SortableRelocation $relocation
      *
      * @return void
      */
@@ -76,7 +82,7 @@ final class ORM extends BaseAdapterORM implements SortableAdapter
         // add excludes
         if (!empty($delta['exclude'])) {
             $meta = $this->getObjectManager()->getClassMetadata($relocation['name']);
-            if (1 == count($meta->getIdentifier())) {
+            if (1 === count($meta->getIdentifier())) {
                 // if we only have one identifier, we can use IN syntax, for better performance
                 $excludedIds = [];
                 foreach ($delta['exclude'] as $entity) {
@@ -108,7 +114,10 @@ final class ORM extends BaseAdapterORM implements SortableAdapter
         $q->getSingleScalarResult();
     }
 
-    private function addGroupWhere(QueryBuilder $qb, iterable $groups): void
+    /**
+     * @param iterable<string, mixed> $groups
+     */
+    private function addGroupWhere(QueryBuilder $qb, ClassMetadata $metadata, iterable $groups): void
     {
         $i = 1;
         foreach ($groups as $group => $value) {
@@ -116,7 +125,7 @@ final class ORM extends BaseAdapterORM implements SortableAdapter
                 $qb->andWhere($qb->expr()->isNull('n.'.$group));
             } else {
                 $qb->andWhere('n.'.$group.' = :group__'.$i);
-                $qb->setParameter('group__'.$i, $value);
+                $qb->setParameter('group__'.$i, $value, $metadata->getTypeOfField($group));
             }
             ++$i;
         }

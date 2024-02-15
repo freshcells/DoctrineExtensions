@@ -25,6 +25,8 @@ use Gedmo\Uploadable\Mapping\Validator;
  *
  * @author Gustavo Falco <comfortablynumb84@gmail.com>
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
+ *
+ * @internal
  */
 class Annotation extends AbstractAnnotationDriver
 {
@@ -76,7 +78,7 @@ class Annotation extends AbstractAnnotationDriver
                 }
             }
 
-            Validator::validateConfiguration($meta, $config);
+            $config = Validator::validateConfiguration($meta, $config);
         }
 
         /*
@@ -106,5 +108,7 @@ class Annotation extends AbstractAnnotationDriver
         }*/
 
         $this->validateFullMetadata($meta, $config);
+
+        return $config;
     }
 }

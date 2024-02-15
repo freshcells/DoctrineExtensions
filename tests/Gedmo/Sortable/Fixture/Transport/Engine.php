@@ -36,35 +36,35 @@ class Engine
      * @ORM\Column(length=32)
      */
     #[ORM\Column(length: 32)]
-    private $type;
+    private ?string $type = null;
 
     /**
      * @ORM\Column(type="integer")
      */
     #[ORM\Column(type: Types::INTEGER)]
-    private $valves;
+    private ?int $valves = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function setType($type): void
+    public function setType(?string $type): void
     {
         $this->type = $type;
     }
 
-    public function getType()
+    public function getType(): ?string
     {
         return $this->type;
     }
 
-    public function setValves($valves): void
+    public function setValves(?int $valves): void
     {
         $this->valves = $valves;
     }
 
-    public function getValves()
+    public function getValves(): ?int
     {
         return $this->valves;
     }

@@ -37,6 +37,7 @@ class ANode
      * @var int|null
      *
      * @Gedmo\TreeLeft
+     *
      * @ORM\Column(type="integer", nullable=true)
      */
     #[ORM\Column(type: Types::INTEGER, nullable: true)]
@@ -47,6 +48,7 @@ class ANode
      * @var int|null
      *
      * @Gedmo\TreeRight
+     *
      * @ORM\Column(type="integer", nullable=true)
      */
     #[ORM\Column(type: Types::INTEGER, nullable: true)]
@@ -54,23 +56,22 @@ class ANode
     private $rgt;
 
     /**
-     * @var BaseNode|null
-     *
      * @Gedmo\TreeParent
+     *
      * @ORM\ManyToOne(targetEntity="BaseNode", inversedBy="children")
      * @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
      */
     #[ORM\ManyToOne(targetEntity: BaseNode::class, inversedBy: 'children')]
     #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[Gedmo\TreeParent]
-    private $parent;
+    private ?BaseNode $parent = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function setParent(BaseNode $parent = null): void
+    public function setParent(?BaseNode $parent = null): void
     {
         $this->parent = $parent;
     }

@@ -25,11 +25,12 @@ use Gedmo\Translatable\TranslatableListener;
  */
 final class TranslatableDocumentCollectionTest extends BaseTestCaseMongoODM
 {
-    public const ARTICLE = Article::class;
-    public const TRANSLATION = Translation::class;
+    private const ARTICLE = Article::class;
+    private const TRANSLATION = Translation::class;
 
-    private $translatableListener;
-    private $id;
+    private TranslatableListener $translatableListener;
+
+    private ?string $id = null;
 
     protected function setUp(): void
     {

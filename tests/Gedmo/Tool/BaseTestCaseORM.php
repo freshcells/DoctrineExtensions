@@ -12,10 +12,11 @@ declare(strict_types=1);
 namespace Gedmo\Tests\Tool;
 
 use Doctrine\Common\EventManager;
-use Doctrine\DBAL\Driver;
+use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Logging\Middleware;
 use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\Driver\AnnotationDriver;
 use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -26,9 +27,7 @@ use Gedmo\SoftDeleteable\SoftDeleteableListener;
 use Gedmo\Timestampable\TimestampableListener;
 use Gedmo\Translatable\TranslatableListener;
 use Gedmo\Tree\TreeListener;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Base test case contains common mock objects
@@ -39,24 +38,13 @@ use Psr\Log\LoggerInterface;
  */
 abstract class BaseTestCaseORM extends TestCase
 {
-    /**
-     * @var EntityManager
-     */
-    protected $em;
+    protected ?EntityManager $em = null;
 
-    /**
-     * @var QueryAnalyzer
-     */
-    protected $queryAnalyzer;
-
-    /**
-     * @var MockObject&LoggerInterface
-     */
-    protected $queryLogger;
+    protected QueryLogger $queryLogger;
 
     protected function setUp(): void
     {
-        $this->queryLogger = $this->createMock(LoggerInterface::class);
+        $this->queryLogger = new QueryLogger();
     }
 
     /**
@@ -64,41 +52,24 @@ abstract class BaseTestCaseORM extends TestCase
      * annotation mapping driver and pdo_sqlite
      * database in memory
      */
-    protected function getDefaultMockSqliteEntityManager(EventManager $evm = null, Configuration $config = null): EntityManager
+    protected function getDefaultMockSqliteEntityManager(?EventManager $evm = null, ?Configuration $config = null): EntityManager
     {
         $conn = [
             'driver' => 'pdo_sqlite',
             'memory' => true,
         ];
 
-        $config = null === $config ? $this->getDefaultConfiguration() : $config;
-        $em = EntityManager::create($conn, $config, $evm ?: $this->getEventManager());
+        $config ??= $this->getDefaultConfiguration();
+        $connection = DriverManager::getConnection($conn, $config);
+        $em = new EntityManager($connection, $config, $evm ?? $this->getEventManager());
 
-        $schema = array_map(static function ($class) use ($em) {
-            return $em->getClassMetadata($class);
-        }, $this->getUsedEntityFixtures());
+        $schema = array_map(static fn (string $class): ClassMetadata => $em->getClassMetadata($class), $this->getUsedEntityFixtures());
 
         $schemaTool = new SchemaTool($em);
         $schemaTool->dropSchema([]);
         $schemaTool->createSchema($schema);
 
         return $this->em = $em;
-    }
-
-    /**
-     * TODO: Remove this method when dropping support of doctrine/dbal 2.
-     *
-     * Starts query statistic log
-     *
-     * @throws \RuntimeException
-     */
-    protected function startQueryLog(): void
-    {
-        if (!$this->em || !$this->em->getConnection()->getDatabasePlatform()) {
-            throw new \RuntimeException('EntityManager and database platform must be initialized');
-        }
-        $this->queryAnalyzer = new QueryAnalyzer($this->em->getConnection()->getDatabasePlatform());
-        $this->em->getConfiguration()->setSQLLogger($this->queryAnalyzer);
     }
 
     /**
@@ -116,6 +87,8 @@ abstract class BaseTestCaseORM extends TestCase
     /**
      * Get a list of used fixture classes
      *
+     * @return array<int, string>
+     *
      * @phpstan-return list<class-string>
      */
     abstract protected function getUsedEntityFixtures(): array;
@@ -126,13 +99,9 @@ abstract class BaseTestCaseORM extends TestCase
         $config->setProxyDir(TESTS_TEMP_DIR);
         $config->setProxyNamespace('Proxy');
         $config->setMetadataDriverImpl($this->getMetadataDriverImplementation());
-
-        // TODO: Remove the "if" check when dropping support of doctrine/dbal 2.
-        if (class_exists(Middleware::class)) {
-            $config->setMiddlewares([
-                new Middleware($this->queryLogger),
-            ]);
-        }
+        $config->setMiddlewares([
+            new Middleware($this->queryLogger),
+        ]);
 
         return $config;
     }

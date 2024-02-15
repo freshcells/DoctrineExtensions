@@ -1,4 +1,4 @@
-# Translatable behavior extension for Doctrine 2
+# Translatable behavior extension for Doctrine
 
 **Translatable** behavior offers a very handy solution for translating specific record fields
 in different languages. Further more, it loads the translations automatically for a locale
@@ -608,6 +608,15 @@ $translatableListener->setPersistDefaultLocaleTranslation(true); // default is f
 
 This would always store translations in all locales, also keeping original record
 translated field values in default locale set.
+
+To set a default translation value upon a missing translation:
+
+``` php
+<?php
+$translatableListener->setDefaultTranslationValue(''); // default is null
+```
+
+**Note**: By default the value is null, but it may cause a Type error for non-nullable getter upon a missing translation.
 
 ### Translation Entity
 

@@ -15,6 +15,8 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Translator\TranslationInterface;
+use Gedmo\Translator\TranslationProxy;
 
 /**
  * @ORM\Entity
@@ -59,20 +61,18 @@ class Person
     private $id;
 
     /**
-     * @var Collection<int, PersonTranslation>
+     * @var Collection<int, TranslationInterface>
      *
      * @ORM\OneToMany(targetEntity="PersonTranslation", mappedBy="translatable", cascade={"persist"})
      */
     #[ORM\OneToMany(targetEntity: PersonTranslation::class, mappedBy: 'translatable', cascade: ['persist'])]
-    private $translations;
+    private Collection $translations;
 
     /**
-     * @var Person|null
-     *
      * @ORM\ManyToOne(targetEntity="Person")
      */
     #[ORM\ManyToOne(targetEntity: self::class)]
-    private $parent;
+    private ?Person $parent = null;
 
     public function __construct()
     {
@@ -124,17 +124,21 @@ class Person
         return $this->parent;
     }
 
+    /**
+     * @return self|TranslationProxy
+     */
     public function translate(string $locale = 'en')
     {
         if ('en' === $locale) {
             return $this;
         }
 
-        return new \Gedmo\Translator\TranslationProxy($this,
-        /* Locale                            */ $locale,
-        /* List of translatable properties:  */ ['name', 'lastName'],
-        /* Translation entity class:         */ PersonTranslation::class,
-        /* Translations collection property: */ $this->translations
+        return new TranslationProxy(
+            $this,
+            $locale, // Locale
+            ['name', 'lastName'], // List of translatable properties
+            PersonTranslation::class, // Translation entity class
+            $this->translations // Translations collection property
         );
     }
 }

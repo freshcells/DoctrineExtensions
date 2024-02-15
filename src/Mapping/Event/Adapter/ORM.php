@@ -10,6 +10,7 @@
 namespace Gedmo\Mapping\Event\Adapter;
 
 use Doctrine\Common\EventArgs;
+use Doctrine\Deprecations\Deprecation;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
@@ -24,22 +25,18 @@ use Gedmo\Mapping\Event\AdapterInterface;
  */
 class ORM implements AdapterInterface
 {
-    /**
-     * @var \Doctrine\Common\EventArgs
-     */
-    private $args;
+    private ?EventArgs $args = null;
 
-    /**
-     * @var \Doctrine\ORM\EntityManagerInterface
-     */
-    private $em;
+    private ?EntityManagerInterface $em = null;
 
     public function __call($method, $args)
     {
-        @trigger_error(sprintf(
+        Deprecation::trigger(
+            'gedmo/doctrine-extensions',
+            'https://github.com/doctrine-extensions/DoctrineExtensions/pull/2409',
             'Using "%s()" method is deprecated since gedmo/doctrine-extensions 3.5 and will be removed in version 4.0.',
             __METHOD__
-        ), E_USER_DEPRECATED);
+        );
 
         if (null === $this->args) {
             throw new RuntimeException('Event args must be set before calling its methods');
@@ -95,6 +92,23 @@ class ORM implements AdapterInterface
             throw new \LogicException(sprintf('Event args must be set before calling "%s()".', __METHOD__));
         }
 
+        // todo: for the next major release, uncomment the next line:
+        // return $this->args->getObjectManager();
+        // and remove anything past this
+        if (\method_exists($this->args, 'getObjectManager')) {
+            return $this->args->getObjectManager();
+        }
+
+        Deprecation::trigger(
+            'gedmo/doctrine-extensions',
+            'https://github.com/doctrine-extensions/DoctrineExtensions/pull/2639',
+            'Calling "%s()" on event args of class "%s" that does not implement "getObjectManager()" is deprecated since gedmo/doctrine-extensions 3.14'
+            .' and will throw a "%s" error in version 4.0.',
+            __METHOD__,
+            get_class($this->args),
+            \Error::class
+        );
+
         return $this->args->getEntityManager();
     }
 
@@ -103,6 +117,23 @@ class ORM implements AdapterInterface
         if (null === $this->args) {
             throw new \LogicException(sprintf('Event args must be set before calling "%s()".', __METHOD__));
         }
+
+        // todo: for the next major release, uncomment the next line:
+        // return $this->args->getObject();
+        // and remove anything past this
+        if (\method_exists($this->args, 'getObject')) {
+            return $this->args->getObject();
+        }
+
+        Deprecation::trigger(
+            'gedmo/doctrine-extensions',
+            'https://github.com/doctrine-extensions/DoctrineExtensions/pull/2639',
+            'Calling "%s()" on event args of class "%s" that does not imeplement "getObject()" is deprecated since gedmo/doctrine-extensions 3.14'
+            .' and will throw a "%s" error in version 4.0.',
+            __METHOD__,
+            get_class($this->args),
+            \Error::class
+        );
 
         return $this->args->getEntity();
     }
@@ -156,15 +187,28 @@ class ORM implements AdapterInterface
     }
 
     /**
-     * Creates a ORM specific LifecycleEventArgs.
+     * @deprecated use custom lifecycle event classes instead
      *
-     * @param object                               $document
-     * @param \Doctrine\ORM\EntityManagerInterface $entityManager
+     * Creates an ORM specific LifecycleEventArgs
      *
-     * @return \Doctrine\ORM\Event\LifecycleEventArgs
+     * @param object                 $object
+     * @param EntityManagerInterface $entityManager
+     *
+     * @return LifecycleEventArgs
      */
-    public function createLifecycleEventArgsInstance($document, $entityManager)
+    public function createLifecycleEventArgsInstance($object, $entityManager)
     {
-        return new LifecycleEventArgs($document, $entityManager);
+        Deprecation::trigger(
+            'gedmo/doctrine-extensions',
+            'https://github.com/doctrine-extensions/DoctrineExtensions/pull/2649',
+            'Using "%s()" method is deprecated since gedmo/doctrine-extensions 3.15 and will be removed in version 4.0.',
+            __METHOD__
+        );
+
+        if (!class_exists(LifecycleEventArgs::class)) {
+            throw new \RuntimeException(sprintf('Cannot call %s() when using doctrine/orm >=3.0, use a custom lifecycle event class instead.', __METHOD__));
+        }
+
+        return new LifecycleEventArgs($object, $entityManager);
     }
 }

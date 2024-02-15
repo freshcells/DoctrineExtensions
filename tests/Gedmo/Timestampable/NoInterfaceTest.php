@@ -23,7 +23,7 @@ use Gedmo\Timestampable\TimestampableListener;
  */
 final class NoInterfaceTest extends BaseTestCaseORM
 {
-    public const FIXTURE = WithoutInterface::class;
+    private const FIXTURE = WithoutInterface::class;
 
     protected function setUp(): void
     {
@@ -40,7 +40,7 @@ final class NoInterfaceTest extends BaseTestCaseORM
         $test = new WithoutInterface();
         $test->setTitle('Test');
 
-        $date = new \DateTime('now');
+        $date = new \DateTime();
         $this->em->persist($test);
         $this->em->flush();
         $this->em->clear();

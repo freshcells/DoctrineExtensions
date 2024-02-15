@@ -12,24 +12,20 @@ declare(strict_types=1);
 namespace Gedmo\Tests\Mapping;
 
 use Doctrine\Common\Annotations\AnnotationReader;
-use Doctrine\Common\EventManager;
-use Doctrine\Deprecations\Deprecation;
-use Doctrine\Deprecations\PHPUnit\VerifyDeprecations;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\Driver\AnnotationDriver;
-use Doctrine\Persistence\Reflection\TypedNoDefaultReflectionPropertyBase;
+use Doctrine\ORM\Mapping\Driver\AttributeDriver;
+use Doctrine\Persistence\Mapping\AbstractClassMetadataFactory;
+use Gedmo\Mapping\ExtensionMetadataFactory;
 use Gedmo\Sluggable\SluggableListener;
-use Symfony\Bridge\PhpUnit\ExpectDeprecationTrait;
+use Gedmo\Tests\Mapping\Fixture\Sluggable;
+use Gedmo\Tests\Mapping\Fixture\SuperClassExtension;
+use Gedmo\Tests\Mapping\Mock\Extension\Encoder\EncoderListener;
+use Psr\Cache\CacheItemPoolInterface;
 
 final class MappingEventSubscriberTest extends ORMMappingTestCase
 {
-    use VerifyDeprecations;
-    use ExpectDeprecationTrait;
-
-    /**
-     * @var EntityManager
-     */
-    private $em;
+    private EntityManager $em;
 
     protected function setUp(): void
     {
@@ -37,38 +33,75 @@ final class MappingEventSubscriberTest extends ORMMappingTestCase
 
         $config = $this->getBasicConfiguration();
 
-        $config->setMetadataDriverImpl(new AnnotationDriver(new AnnotationReader()));
-
-        $conn = [
-            'driver' => 'pdo_sqlite',
-            'memory' => true,
-        ];
-
-        $this->em = EntityManager::create($conn, $config, new EventManager());
-    }
-
-    /**
-     * @group legacy
-     */
-    public function testGetConfigurationCachedFromDoctrine(): void
-    {
-        // doctrine/persistence changed from trigger_error to doctrine/deprecations in 2.2.1. In 2.2.2 this trait was
-        // added, this is used to know if the doctrine/persistence version is using trigger_error or
-        // doctrine/deprecations. This "if" check can be removed once we drop support for doctrine/persistence < 2.2.1
-        if (trait_exists(TypedNoDefaultReflectionPropertyBase::class)) {
-            Deprecation::enableWithTriggerError();
-
-            $this->expectDeprecationWithIdentifier('https://github.com/doctrine/persistence/issues/184');
+        if (PHP_VERSION_ID >= 80000) {
+            $config->setMetadataDriverImpl(new AttributeDriver([]));
         } else {
-            $this->expectDeprecation('Doctrine\Persistence\Mapping\AbstractClassMetadataFactory::getCacheDriver is deprecated. Use getCache() instead.');
+            $config->setMetadataDriverImpl(new AnnotationDriver(new AnnotationReader()));
         }
 
-        $subscriber = new SluggableListener();
-        $subscriber->getExtensionMetadataFactory($this->em);
+        $this->em = $this->getBasicEntityManager($config);
     }
 
-    protected function getUsedEntityFixtures(): array
+    public function testGetMetadataFactoryCacheFromDoctrineForSluggable(): void
     {
-        return [];
+        $metadataFactory = $this->em->getMetadataFactory();
+        $getCache = \Closure::bind(static fn (AbstractClassMetadataFactory $metadataFactory): ?CacheItemPoolInterface => $metadataFactory->getCache(), null, \get_class($metadataFactory));
+
+        $cache = $getCache($metadataFactory);
+
+        $cacheKey = ExtensionMetadataFactory::getCacheId(Sluggable::class, 'Gedmo\Sluggable');
+
+        static::assertFalse($cache->hasItem($cacheKey));
+
+        $subscriber = new SluggableListener();
+        $classMetadata = $this->em->getClassMetadata(Sluggable::class);
+        $subscriber->getExtensionMetadataFactory($this->em)->getExtensionMetadata($classMetadata);
+
+        static::assertTrue($cache->hasItem($cacheKey));
+    }
+
+    public function testGetMetadataFactoryCacheFromDoctrineForSuperClassExtension(): void
+    {
+        $metadataFactory = $this->em->getMetadataFactory();
+        $getCache = \Closure::bind(static fn (AbstractClassMetadataFactory $metadataFactory): ?CacheItemPoolInterface => $metadataFactory->getCache(), null, \get_class($metadataFactory));
+
+        /** @var CacheItemPoolInterface $cache */
+        $cache = $getCache($metadataFactory);
+
+        $cacheKey = ExtensionMetadataFactory::getCacheId(SuperClassExtension::class, 'Gedmo\Tests\Mapping\Mock\Extension\Encoder');
+
+        static::assertFalse($cache->hasItem($cacheKey));
+
+        $subscriber = new EncoderListener();
+        $classMetadata = $this->em->getClassMetadata(SuperClassExtension::class);
+
+        $config = $subscriber->getExtensionMetadataFactory($this->em)->getExtensionMetadata($classMetadata);
+
+        static::assertSame([
+            'content' => [
+                'type' => 'md5',
+                'secret' => null,
+            ],
+        ], $config['encode']);
+
+        // Create new configuration to use new array cache
+        $config = $this->getBasicConfiguration();
+
+        if (PHP_VERSION_ID >= 80000) {
+            $config->setMetadataDriverImpl(new AttributeDriver([]));
+        } else {
+            $config->setMetadataDriverImpl(new AnnotationDriver(new AnnotationReader()));
+        }
+
+        $this->em = $this->getBasicEntityManager($config);
+
+        $config = $subscriber->getExtensionMetadataFactory($this->em)->getExtensionMetadata($classMetadata);
+
+        static::assertSame([
+            'content' => [
+                'type' => 'md5',
+                'secret' => null,
+            ],
+        ], $config['encode']);
     }
 }

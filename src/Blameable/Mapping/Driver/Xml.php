@@ -20,15 +20,17 @@ use Gedmo\Mapping\Driver\Xml as BaseXml;
  * extension.
  *
  * @author David Buchmann <mail@davidbu.ch>
+ *
+ * @internal
  */
 class Xml extends BaseXml
 {
     /**
      * List of types which are valid for blame
      *
-     * @var array
+     * @var string[]
      */
-    private $validTypes = [
+    private const VALID_TYPES = [
         'one',
         'string',
         'int',
@@ -68,9 +70,6 @@ class Xml extends BaseXml
                         }
                         $trackedFieldAttribute = $this->_getAttribute($data, 'field');
                         $valueAttribute = $this->_isAttributeSet($data, 'value') ? $this->_getAttribute($data, 'value') : null;
-                        if (is_array($trackedFieldAttribute) && null !== $valueAttribute) {
-                            throw new InvalidMappingException('Blameable extension does not support multiple value changeset detection yet.');
-                        }
                         $field = [
                             'field' => $field,
                             'trackedField' => $trackedFieldAttribute,
@@ -101,9 +100,6 @@ class Xml extends BaseXml
                         }
                         $trackedFieldAttribute = $this->_getAttribute($data, 'field');
                         $valueAttribute = $this->_isAttributeSet($data, 'value') ? $this->_getAttribute($data, 'value') : null;
-                        if (is_array($trackedFieldAttribute) && null !== $valueAttribute) {
-                            throw new InvalidMappingException('Blameable extension does not support multiple value changeset detection yet.');
-                        }
                         $field = [
                             'field' => $field,
                             'trackedField' => $trackedFieldAttribute,
@@ -114,6 +110,8 @@ class Xml extends BaseXml
                 }
             }
         }
+
+        return $config;
     }
 
     /**
@@ -128,6 +126,6 @@ class Xml extends BaseXml
     {
         $mapping = $meta->getFieldMapping($field);
 
-        return $mapping && in_array($mapping['type'], $this->validTypes, true);
+        return $mapping && in_array($mapping['type'], self::VALID_TYPES, true);
     }
 }

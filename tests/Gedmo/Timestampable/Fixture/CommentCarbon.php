@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Gedmo\Tests\Timestampable\Fixture;
 
+use Carbon\CarbonImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
@@ -35,33 +36,28 @@ class CommentCarbon implements Timestampable
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="message", type="text")
      */
     #[ORM\Column(name: 'message', type: Types::TEXT)]
-    private $message;
+    private ?string $message = null;
 
     /**
-     * @var ArticleCarbon|null
-     *
      * @ORM\ManyToOne(targetEntity="Gedmo\Tests\Timestampable\Fixture\ArticleCarbon", inversedBy="comments")
      */
     #[ORM\ManyToOne(targetEntity: ArticleCarbon::class, inversedBy: 'comments')]
-    private $article;
+    private ?ArticleCarbon $article = null;
 
     /**
-     * @var int|null
-     *
      * @ORM\Column(type="integer")
      */
     #[ORM\Column(type: Types::INTEGER)]
-    private $status;
+    private ?int $status = null;
 
     /**
-     * @var \Carbon\CarbonImmutable|null
+     * @var CarbonImmutable|null
      *
      * @ORM\Column(name="closed", type="datetime", nullable=true)
+     *
      * @Gedmo\Timestampable(on="change", field="status", value=1)
      */
     #[ORM\Column(name: 'closed', type: Types::DATETIME_MUTABLE, nullable: true)]
@@ -72,6 +68,7 @@ class CommentCarbon implements Timestampable
      * @var \DateTime|null
      *
      * @ORM\Column(name="modified", type="time")
+     *
      * @Gedmo\Timestampable(on="update")
      */
     #[ORM\Column(name: 'modified', type: Types::TIME_MUTABLE)]
@@ -113,7 +110,7 @@ class CommentCarbon implements Timestampable
         return $this->modified;
     }
 
-    public function getClosed(): ?\Carbon\CarbonImmutable
+    public function getClosed(): ?CarbonImmutable
     {
         return $this->closed;
     }

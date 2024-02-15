@@ -12,8 +12,13 @@ namespace Gedmo\Translatable;
 use Doctrine\Common\EventArgs;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ORM\ORMInvalidArgumentException;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Persistence\Event\LoadClassMetadataEventArgs;
+use Doctrine\Persistence\Event\ManagerEventArgs;
 use Doctrine\Persistence\Mapping\ClassMetadata;
+use Doctrine\Persistence\ObjectManager;
+use Gedmo\Exception\InvalidArgumentException;
+use Gedmo\Exception\RuntimeException;
 use Gedmo\Mapping\MappedEventSubscriber;
 use Gedmo\Tool\Wrapper\AbstractWrapper;
 use Gedmo\Translatable\Mapping\Event\TranslatableAdapter;
@@ -31,6 +36,20 @@ use Gedmo\Translatable\Mapping\Event\TranslatableAdapter;
  * the caching is activated for metadata
  *
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
+ *
+ * @phpstan-type TranslatableConfiguration = array{
+ *   fields?: string[],
+ *   fallback?: array<string, bool>,
+ *   locale?: string,
+ *   translationClass?: class-string,
+ *   useObjectClass?: class-string,
+ * }
+ *
+ * @phpstan-method TranslatableConfiguration getConfiguration(ObjectManager $objectManager, $class)
+ *
+ * @method TranslatableAdapter getEventAdapter(EventArgs $args)
+ *
+ * @final since gedmo/doctrine-extensions 3.11
  */
 class TranslatableListener extends MappedEventSubscriber
 {
@@ -65,59 +84,56 @@ class TranslatableListener extends MappedEventSubscriber
      * which is used for updating is not default. This
      * will load the default translation in other locales
      * if record is not translated yet
-     *
-     * @var string
      */
-    private $defaultLocale = 'en_US';
+    private string $defaultLocale = 'en_US';
 
     /**
      * If this is set to false, when if entity does
      * not have a translation for requested locale
      * it will show a blank value
-     *
-     * @var bool
      */
-    private $translationFallback = false;
+    private bool $translationFallback = false;
 
     /**
      * List of translations which do not have the foreign
      * key generated yet - MySQL case. These translations
      * will be updated with new keys on postPersist event
      *
-     * @var array
+     * @var array<int, array<int, object|Translatable>>
      */
-    private $pendingTranslationInserts = [];
+    private array $pendingTranslationInserts = [];
 
     /**
      * Currently in case if there is TranslationQueryWalker
      * in charge. We need to skip issuing additional queries
      * on load
-     *
-     * @var bool
      */
-    private $skipOnLoad = false;
+    private bool $skipOnLoad = false;
 
     /**
      * Tracks locale the objects currently translated in
      *
-     * @var array
+     * @var array<int, string>
      */
-    private $translatedInLocale = [];
+    private array $translatedInLocale = [];
 
     /**
      * Whether or not, to persist default locale
      * translation or keep it in original record
-     *
-     * @var bool
      */
-    private $persistDefaultLocaleTranslation = false;
+    private bool $persistDefaultLocaleTranslation = false;
 
     /**
      * Tracks translation object for default locale
      *
-     * @var array
+     * @var array<int, array<string, object|Translatable>>
      */
-    private $translationInDefaultLocale = [];
+    private array $translationInDefaultLocale = [];
+
+    /**
+     * Default translation value upon missing translation
+     */
+    private ?string $defaultTranslationValue = null;
 
     /**
      * Specifies the list of events to listen
@@ -194,12 +210,13 @@ class TranslatableListener extends MappedEventSubscriber
      *
      * @param LoadClassMetadataEventArgs $eventArgs
      *
+     * @phpstan-param LoadClassMetadataEventArgs<ClassMetadata<object>, ObjectManager> $eventArgs
+     *
      * @return void
      */
     public function loadClassMetadata(EventArgs $eventArgs)
     {
-        $ea = $this->getEventAdapter($eventArgs);
-        $this->loadMetadataForObjectClass($ea->getObjectManager(), $eventArgs->getClassMetadata());
+        $this->loadMetadataForObjectClass($eventArgs->getObjectManager(), $eventArgs->getClassMetadata());
     }
 
     /**
@@ -208,7 +225,11 @@ class TranslatableListener extends MappedEventSubscriber
      *
      * @param string $class
      *
+     * @phpstan-param class-string $class
+     *
      * @return string
+     *
+     * @phpstan-return class-string
      */
     public function getTranslationClass(TranslatableAdapter $ea, $class)
     {
@@ -258,6 +279,17 @@ class TranslatableListener extends MappedEventSubscriber
     }
 
     /**
+     * Set the default translation value on missing translation
+     *
+     * @deprecated usage of a non nullable value for defaultTranslationValue is deprecated
+     * and will be removed on the next major release which will rely on the expected types
+     */
+    public function setDefaultTranslationValue(?string $defaultTranslationValue): void
+    {
+        $this->defaultTranslationValue = $defaultTranslationValue;
+    }
+
+    /**
      * Sets the default locale, this changes behavior
      * to not update the original record field if locale
      * which is used for updating is not default
@@ -297,40 +329,37 @@ class TranslatableListener extends MappedEventSubscriber
 
     /**
      * Gets the locale to use for translation. Loads object
-     * defined locale first..
+     * defined locale first.
      *
      * @param object        $object
      * @param ClassMetadata $meta
      * @param object        $om
      *
-     * @throws \Gedmo\Exception\RuntimeException if language or locale property is not
-     *                                           found in entity
+     * @throws RuntimeException if language or locale property is not found in entity
      *
      * @return string
      */
     public function getTranslatableLocale($object, $meta, $om = null)
     {
         $locale = $this->locale;
-        if (isset(self::$configurations[$this->name][$meta->getName()]['locale'])) {
-            /** @var \ReflectionClass $class */
+        $configurationLocale = self::$configurations[$this->name][$meta->getName()]['locale'] ?? null;
+        if (null !== $configurationLocale) {
             $class = $meta->getReflectionClass();
-            $reflectionProperty = $class->getProperty(self::$configurations[$this->name][$meta->getName()]['locale']);
-            if (!$reflectionProperty) {
-                $column = self::$configurations[$this->name][$meta->getName()]['locale'];
-
-                throw new \Gedmo\Exception\RuntimeException("There is no locale or language property ({$column}) found on object: {$meta->getName()}");
+            if (!$class->hasProperty($configurationLocale)) {
+                throw new RuntimeException("There is no locale or language property ({$configurationLocale}) found on object: {$meta->getName()}");
             }
+            $reflectionProperty = $class->getProperty($configurationLocale);
             $reflectionProperty->setAccessible(true);
             $value = $reflectionProperty->getValue($object);
             if (is_object($value) && method_exists($value, '__toString')) {
-                $value = (string) $value;
+                $value = $value->__toString();
             }
             if ($this->isValidLocale($value)) {
                 $locale = $value;
             }
         } elseif ($om instanceof DocumentManager) {
-            [$mapping, $parentObject] = $om->getUnitOfWork()->getParentAssociation($object);
-            if (null != $parentObject) {
+            [, $parentObject] = $om->getUnitOfWork()->getParentAssociation($object);
+            if (null !== $parentObject) {
                 $parentMeta = $om->getClassMetadata(get_class($parentObject));
                 $locale = $this->getTranslatableLocale($parentObject, $parentMeta, $om);
             }
@@ -345,6 +374,10 @@ class TranslatableListener extends MappedEventSubscriber
      * This has to be done in the preFlush because, when an entity has been loaded
      * in a different locale, no changes will be detected.
      *
+     * @param ManagerEventArgs $args
+     *
+     * @phpstan-param ManagerEventArgs<ObjectManager> $args
+     *
      * @return void
      */
     public function preFlush(EventArgs $args)
@@ -355,6 +388,9 @@ class TranslatableListener extends MappedEventSubscriber
 
         foreach ($this->translationInDefaultLocale as $oid => $fields) {
             $trans = reset($fields);
+
+            assert(false !== $trans);
+
             if ($ea->usesPersonalTranslation(get_class($trans))) {
                 $entity = $trans->getObject();
             } else {
@@ -378,6 +414,10 @@ class TranslatableListener extends MappedEventSubscriber
     /**
      * Looks for translatable objects being inserted or updated
      * for further processing
+     *
+     * @param ManagerEventArgs $args
+     *
+     * @phpstan-param ManagerEventArgs<ObjectManager> $args
      *
      * @return void
      */
@@ -409,6 +449,7 @@ class TranslatableListener extends MappedEventSubscriber
             if (isset($config['fields'])) {
                 $wrapped = AbstractWrapper::wrap($object, $om);
                 $transClass = $this->getTranslationClass($ea, $meta->getName());
+                \assert($wrapped instanceof AbstractWrapper);
                 $ea->removeAssociatedTranslations($wrapped, $transClass, $config['useObjectClass']);
             }
         }
@@ -417,6 +458,10 @@ class TranslatableListener extends MappedEventSubscriber
     /**
      * Checks for inserted object to update their translation
      * foreign keys
+     *
+     * @param LifecycleEventArgs $args
+     *
+     * @phpstan-param LifecycleEventArgs<ObjectManager> $args
      *
      * @return void
      */
@@ -427,7 +472,7 @@ class TranslatableListener extends MappedEventSubscriber
         $object = $ea->getObject();
         $meta = $om->getClassMetadata(get_class($object));
         // check if entity is tracked by translatable and without foreign key
-        if ($this->getConfiguration($om, $meta->getName()) && count($this->pendingTranslationInserts)) {
+        if ($this->getConfiguration($om, $meta->getName()) && [] !== $this->pendingTranslationInserts) {
             $oid = spl_object_id($object);
             if (array_key_exists($oid, $this->pendingTranslationInserts)) {
                 // load the pending translations without key
@@ -450,6 +495,10 @@ class TranslatableListener extends MappedEventSubscriber
     /**
      * After object is loaded, listener updates the translations
      * by currently used locale
+     *
+     * @param ManagerEventArgs $args
+     *
+     * @phpstan-param ManagerEventArgs<ObjectManager> $args
      *
      * @return void
      */
@@ -483,7 +532,8 @@ class TranslatableListener extends MappedEventSubscriber
             );
             // translate object's translatable properties
             foreach ($config['fields'] as $field) {
-                $translated = null;
+                $translated = $this->defaultTranslationValue;
+
                 foreach ($result as $entry) {
                     if ($entry['field'] == $field) {
                         $translated = $entry['content'] ?? null;
@@ -491,8 +541,9 @@ class TranslatableListener extends MappedEventSubscriber
                         break;
                     }
                 }
+
                 // update translation
-                if (null !== $translated
+                if ($this->defaultTranslationValue !== $translated
                     || (!$this->translationFallback && (!isset($config['fallback'][$field]) || !$config['fallback'][$field]))
                     || ($this->translationFallback && isset($config['fallback'][$field]) && !$config['fallback'][$field])
                 ) {
@@ -512,9 +563,9 @@ class TranslatableListener extends MappedEventSubscriber
     /**
      * Sets translation object which represents translation in default language.
      *
-     * @param int    $oid   hash of basic entity
-     * @param string $field field of basic entity
-     * @param mixed  $trans Translation object
+     * @param int                 $oid   hash of basic entity
+     * @param string              $field field of basic entity
+     * @param object|Translatable $trans Translation object
      *
      * @return void
      */
@@ -557,21 +608,21 @@ class TranslatableListener extends MappedEventSubscriber
      *
      * @param string $locale locale to validate
      *
-     * @throws \Gedmo\Exception\InvalidArgumentException if locale is not valid
+     * @throws InvalidArgumentException if locale is not valid
      *
      * @return void
      */
     protected function validateLocale($locale)
     {
         if (!$this->isValidLocale($locale)) {
-            throw new \Gedmo\Exception\InvalidArgumentException('Locale or language cannot be empty and must be set through Listener or Entity');
+            throw new InvalidArgumentException('Locale or language cannot be empty and must be set through Listener or Entity');
         }
     }
 
     /**
      * Check if the given locale is valid
      */
-    private function isValidlocale(?string $locale): bool
+    private function isValidLocale(?string $locale): bool
     {
         return is_string($locale) && strlen($locale);
     }
@@ -645,6 +696,8 @@ class TranslatableListener extends MappedEventSubscriber
 
             // check if translation already is created
             if (!$isInsert && !$translation) {
+                \assert($wrapped instanceof AbstractWrapper);
+
                 $translation = $ea->findTranslation(
                     $wrapped,
                     $locale,
@@ -765,17 +818,11 @@ class TranslatableListener extends MappedEventSubscriber
      * @param int    $oid   hash of the basic entity
      * @param string $field field of basic entity
      *
-     * @return mixed Returns translation object if it exists or NULL otherwise
+     * @return object|Translatable|null Returns translation object if it exists or NULL otherwise
      */
     private function getTranslationInDefaultLocale(int $oid, string $field)
     {
-        if (array_key_exists($oid, $this->translationInDefaultLocale)) {
-            $ret = $this->translationInDefaultLocale[$oid][$field] ?? null;
-        } else {
-            $ret = null;
-        }
-
-        return $ret;
+        return $this->translationInDefaultLocale[$oid][$field] ?? null;
     }
 
     /**

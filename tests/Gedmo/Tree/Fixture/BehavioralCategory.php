@@ -20,6 +20,7 @@ use Gedmo\Tests\Tree\Fixture\Repository\BehavioralCategoryRepository;
 
 /**
  * @ORM\Entity(repositoryClass="Gedmo\Tests\Tree\Fixture\Repository\BehavioralCategoryRepository")
+ *
  * @Gedmo\Tree(type="nested")
  */
 #[ORM\Entity(repositoryClass: BehavioralCategoryRepository::class)]
@@ -39,19 +40,19 @@ class BehavioralCategory
     private $id;
 
     /**
-     * @var string|null
-     *
      * @Gedmo\Translatable
+     *
      * @ORM\Column(name="title", type="string", length=64)
      */
     #[ORM\Column(name: 'title', type: Types::STRING, length: 64)]
     #[Gedmo\Translatable]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeLeft
+     *
      * @ORM\Column(name="lft", type="integer", nullable=true)
      */
     #[ORM\Column(name: 'lft', type: Types::INTEGER, nullable: true)]
@@ -62,6 +63,7 @@ class BehavioralCategory
      * @var int|null
      *
      * @Gedmo\TreeRight
+     *
      * @ORM\Column(name="rgt", type="integer", nullable=true)
      */
     #[ORM\Column(name: 'rgt', type: Types::INTEGER, nullable: true)]
@@ -69,18 +71,17 @@ class BehavioralCategory
     private $rgt;
 
     /**
-     * @var self|null
-     *
      * @Gedmo\TreeParent
+     *
      * @ORM\ManyToOne(targetEntity="BehavioralCategory", inversedBy="children")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
+     *     @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
      * })
      */
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
     #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[Gedmo\TreeParent]
-    private $parent;
+    private ?BehavioralCategory $parent = null;
 
     /**
      * @var Collection<int, self>
@@ -88,13 +89,14 @@ class BehavioralCategory
      * @ORM\OneToMany(targetEntity="BehavioralCategory", mappedBy="parent")
      */
     #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parent')]
-    private $children;
+    private Collection $children;
 
     /**
      * @var string|null
      *
      * @Gedmo\Translatable
      * @Gedmo\Slug(fields={"title"})
+     *
      * @ORM\Column(name="slug", type="string", length=128, unique=true)
      */
     #[ORM\Column(name: 'slug', type: Types::STRING, length: 128, unique: true)]

@@ -16,13 +16,14 @@ use Doctrine\ODM\MongoDB\Event\LoadClassMetadataEventArgs;
 use Gedmo\Mapping\MappedEventSubscriber;
 use Gedmo\Tests\Mapping\Fixture\Document\User;
 use Gedmo\Tests\Mapping\Mock\Extension\Encoder\EncoderListener;
+use Gedmo\Tests\Mapping\Mock\Extension\Encoder\Mapping\Event\Adapter\ODM;
 use Gedmo\Tests\Tool\BaseTestCaseMongoODM;
 
 final class ExtensionODMTest extends BaseTestCaseMongoODM
 {
-    public const USER = User::class;
+    private const USER = User::class;
 
-    private $encoderListener;
+    private EncoderListener $encoderListener;
 
     protected function setUp(): void
     {
@@ -37,7 +38,6 @@ final class ExtensionODMTest extends BaseTestCaseMongoODM
 
     public function testExtensionMetadata(): void
     {
-        $meta = $this->dm->getClassMetadata(self::USER);
         $config = $this->encoderListener->getConfiguration($this->dm, self::USER);
         static::assertArrayHasKey('encode', $config);
         static::assertCount(2, $config['encode']);
@@ -79,6 +79,6 @@ final class ExtensionODMTest extends BaseTestCaseMongoODM
             $this->encoderListener,
             $loadClassMetadataEventArgs
         );
-        static::assertInstanceOf(\Gedmo\Tests\Mapping\Mock\Extension\Encoder\Mapping\Event\Adapter\ODM::class, $eventAdapter);
+        static::assertInstanceOf(ODM::class, $eventAdapter);
     }
 }

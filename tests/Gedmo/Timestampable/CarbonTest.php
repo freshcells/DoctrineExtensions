@@ -27,9 +27,9 @@ use Gedmo\Timestampable\TimestampableListener;
 
 final class CarbonTest extends BaseTestCaseORM
 {
-    public const ARTICLE = ArticleCarbon::class;
-    public const COMMENT = CommentCarbon::class;
-    public const TYPE = Type::class;
+    private const ARTICLE = ArticleCarbon::class;
+    private const COMMENT = CommentCarbon::class;
+    private const TYPE = Type::class;
 
     protected function setUp(): void
     {
@@ -93,11 +93,11 @@ final class CarbonTest extends BaseTestCaseORM
         $author->setName('New author');
         $sport->setAuthor($author);
 
-        /** @var \Gedmo\Tests\Timestampable\Fixture\CommentCarbon $sportComment */
+        /** @var CommentCarbon $sportComment */
         $sportComment = $this->em->getRepository(self::COMMENT)->findOneBy(['message' => 'hello']);
-        static::assertInstanceOf(DateTime::class, $sportComment->getModified(), 'Type TIME_MUTABLE should stay DateTime');
+        static::assertInstanceOf(\DateTime::class, $sportComment->getModified(), 'Type TIME_MUTABLE should stay DateTime');
 
-        static::assertNotNull($scm = $sportComment->getModified());
+        static::assertNotNull($sportComment->getModified());
         static::assertNull($sportComment->getClosed());
 
         $sportComment->setStatus(1);

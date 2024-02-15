@@ -14,7 +14,6 @@ namespace Gedmo\Tests\Sortable\Fixture;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Driver\PDO\Exception as PDODriverException;
-use Doctrine\DBAL\Driver\PDOException as LegacyPDOException;
 use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -42,22 +41,19 @@ class CustomerType
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="name", type="string")
      */
     #[ORM\Column(name: 'name', type: Types::STRING)]
-    private $name;
+    private ?string $name = null;
 
     /**
-     * @var int|null
-     *
      * @Gedmo\SortablePosition
+     *
      * @ORM\Column(name="position", type="integer")
      */
     #[Gedmo\SortablePosition]
     #[ORM\Column(name: 'position', type: Types::INTEGER)]
-    private $position;
+    private ?int $position = null;
 
     /**
      * @var Collection<int, Customer>
@@ -65,7 +61,7 @@ class CustomerType
      * @ORM\OneToMany(targetEntity="Customer", mappedBy="type")
      */
     #[ORM\OneToMany(mappedBy: 'type', targetEntity: Customer::class)]
-    private $customers;
+    private Collection $customers;
 
     public function __construct()
     {
@@ -126,11 +122,6 @@ class CustomerType
             // does not support SQLite constraints, which must be tested, too.
 
             $pdoException = new \PDOException('SQLSTATE[23000]: Integrity constraint violation: 1451 Cannot delete or update a parent row: a foreign key constraint fails', 23000);
-
-            // @todo: This check can be removed when dropping support for doctrine/dbal 2.x.
-            if (class_exists(LegacyPDOException::class)) {
-                throw new ForeignKeyConstraintViolationException(sprintf('An exception occurred while deleting the customer type with id %s.', $this->getId()), new LegacyPDOException($pdoException));
-            }
 
             throw new ForeignKeyConstraintViolationException(PDODriverException::new($pdoException), null);
         }

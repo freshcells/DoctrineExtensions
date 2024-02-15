@@ -23,20 +23,20 @@ use Gedmo\Tree\Entity\Repository\NestedTreeRepository;
 class Node extends BaseNode
 {
     /**
-     * @var string|null
-     *
      * @Gedmo\Translatable
+     *
      * @ORM\Column(name="title", type="string", length=64)
      */
     #[ORM\Column(name: 'title', type: Types::STRING, length: 64)]
     #[Gedmo\Translatable]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @var string|null
      *
      * @Gedmo\Translatable
      * @Gedmo\Slug(fields={"title"})
+     *
      * @ORM\Column(name="slug", type="string", length=128)
      */
     #[ORM\Column(name: 'slug', type: Types::STRING, length: 128)]

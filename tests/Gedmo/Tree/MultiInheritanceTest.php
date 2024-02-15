@@ -24,10 +24,10 @@ use Gedmo\Translatable\Entity\Translation;
  */
 final class MultiInheritanceTest extends BaseTestCaseORM
 {
-    public const NODE = Node::class;
-    public const BASE_NODE = BaseNode::class;
-    public const ANODE = ANode::class;
-    public const TRANSLATION = Translation::class;
+    private const NODE = Node::class;
+    private const BASE_NODE = BaseNode::class;
+    private const ANODE = ANode::class;
+    private const TRANSLATION = Translation::class;
 
     protected function setUp(): void
     {
@@ -44,7 +44,6 @@ final class MultiInheritanceTest extends BaseTestCaseORM
 
         $food = $repo->findOneBy(['identifier' => 'food']);
         $left = $meta->getReflectionProperty('lft')->getValue($food);
-        $right = $meta->getReflectionProperty('rgt')->getValue($food);
 
         static::assertSame(1, $left);
         static::assertNotNull($food->getCreated());
@@ -67,7 +66,7 @@ final class MultiInheritanceTest extends BaseTestCaseORM
         $repo = $this->em->getRepository(self::NODE);
         $vegies = $repo->findOneBy(['title' => 'Vegitables']);
 
-        $count = $repo->childCount($vegies, true/*direct*/);
+        $count = $repo->childCount($vegies, true/* direct */);
         static::assertSame(3, $count);
 
         $children = $repo->children($vegies, true);
@@ -92,35 +91,35 @@ final class MultiInheritanceTest extends BaseTestCaseORM
 
     private function populate(): void
     {
-        $root = new \Gedmo\Tests\Tree\Fixture\Node();
+        $root = new Node();
         $root->setTitle('Food');
         $root->setIdentifier('food');
 
-        $root2 = new \Gedmo\Tests\Tree\Fixture\Node();
+        $root2 = new Node();
         $root2->setTitle('Sports');
         $root2->setIdentifier('sport');
 
-        $child = new \Gedmo\Tests\Tree\Fixture\Node();
+        $child = new Node();
         $child->setTitle('Fruits');
         $child->setParent($root);
         $child->setIdentifier('fruit');
 
-        $child2 = new \Gedmo\Tests\Tree\Fixture\Node();
+        $child2 = new Node();
         $child2->setTitle('Vegitables');
         $child2->setParent($root);
         $child2->setIdentifier('vegie');
 
-        $childsChild = new \Gedmo\Tests\Tree\Fixture\Node();
+        $childsChild = new Node();
         $childsChild->setTitle('Carrots');
         $childsChild->setParent($child2);
         $childsChild->setIdentifier('carrot');
 
-        $potatoes = new \Gedmo\Tests\Tree\Fixture\Node();
+        $potatoes = new Node();
         $potatoes->setTitle('Potatoes');
         $potatoes->setParent($child2);
         $potatoes->setIdentifier('potatoe');
 
-        $cabbages = new \Gedmo\Tests\Tree\Fixture\BaseNode();
+        $cabbages = new BaseNode();
         $cabbages->setIdentifier('cabbage');
         $cabbages->setParent($child2);
 

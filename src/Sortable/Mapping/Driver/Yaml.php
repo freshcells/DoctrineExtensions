@@ -23,27 +23,29 @@ use Gedmo\Mapping\Driver\File;
  * @author Lukas Botsch <lukas.botsch@gmail.com>
  *
  * @deprecated since gedmo/doctrine-extensions 3.5, will be removed in version 4.0.
+ *
+ * @internal
  */
 class Yaml extends File implements Driver
 {
+    /**
+     * List of types which are valid for position fields
+     *
+     * @var string[]
+     */
+    private const VALID_TYPES = [
+        'int',
+        'integer',
+        'smallint',
+        'bigint',
+    ];
+
     /**
      * File extension
      *
      * @var string
      */
     protected $_extension = '.dcm.yml';
-
-    /**
-     * List of types which are valid for position fields
-     *
-     * @var array
-     */
-    private $validTypes = [
-        'int',
-        'integer',
-        'smallint',
-        'bigint',
-    ];
 
     public function readExtendedMetadata($meta, array &$config)
     {
@@ -60,13 +62,13 @@ class Yaml extends File implements Driver
                     }
                 }
             }
-            $this->readSortableGroups($mapping['fields'], $config);
+            $config = $this->readSortableGroups($mapping['fields'], $config);
         }
         if (isset($mapping['manyToOne'])) {
-            $this->readSortableGroups($mapping['manyToOne'], $config);
+            $config = $this->readSortableGroups($mapping['manyToOne'], $config);
         }
         if (isset($mapping['manyToMany'])) {
-            $this->readSortableGroups($mapping['manyToMany'], $config);
+            $config = $this->readSortableGroups($mapping['manyToMany'], $config);
         }
 
         if (!$meta->isMappedSuperclass && $config) {
@@ -74,6 +76,8 @@ class Yaml extends File implements Driver
                 throw new InvalidMappingException("Missing property: 'position' in class - {$meta->getName()}");
             }
         }
+
+        return $config;
     }
 
     protected function _loadMappingFile($file)
@@ -93,10 +97,16 @@ class Yaml extends File implements Driver
     {
         $mapping = $meta->getFieldMapping($field);
 
-        return $mapping && in_array($mapping['type'], $this->validTypes, true);
+        return $mapping && in_array($mapping['type'], self::VALID_TYPES, true);
     }
 
-    private function readSortableGroups(iterable $mapping, array &$config): void
+    /**
+     * @param iterable<string, array<string, mixed>> $mapping
+     * @param array<string, mixed>                   $config
+     *
+     * @return array<string, mixed>
+     */
+    private function readSortableGroups(iterable $mapping, array $config): array
     {
         foreach ($mapping as $field => $fieldMapping) {
             if (isset($fieldMapping['gedmo'])) {
@@ -108,5 +118,7 @@ class Yaml extends File implements Driver
                 }
             }
         }
+
+        return $config;
     }
 }

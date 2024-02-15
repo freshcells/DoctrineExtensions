@@ -24,8 +24,8 @@ use Gedmo\Tree\TreeListener;
  */
 final class NestedTreePositionTest extends BaseTestCaseORM
 {
-    public const CATEGORY = Category::class;
-    public const ROOT_CATEGORY = RootCategory::class;
+    private const CATEGORY = Category::class;
+    private const ROOT_CATEGORY = RootCategory::class;
 
     protected function setUp(): void
     {
@@ -81,7 +81,7 @@ final class NestedTreePositionTest extends BaseTestCaseORM
         $oranges = $repo->findOneBy(['title' => 'Oranges']);
         $meat = $repo->findOneBy(['title' => 'Meat']);
 
-        static::assertSame(2, $oranges->getLevel());
+        static::assertSame(3, $oranges->getLevel());
         static::assertSame(7, $oranges->getLeft());
         static::assertSame(8, $oranges->getRight());
 
@@ -94,18 +94,18 @@ final class NestedTreePositionTest extends BaseTestCaseORM
         static::assertSame(7, $oranges->getLeft());
         static::assertSame(8, $oranges->getRight());
 
-        //Normal test that pass
+        // Normal test that pass
         static::assertSame(9, $meat->getLeft());
         static::assertSame(10, $meat->getRight());
 
         // Raw query to show the issue #108 with wrong left value by Doctrine
         $dql = 'SELECT c FROM '.self::ROOT_CATEGORY.' c';
-        $dql .= ' WHERE c.id = 5'; //5 == meat
+        $dql .= ' WHERE c.id = 5'; // 5 == meat
         $meat_array = $this->em->createQuery($dql)->getScalarResult();
 
         static::assertSame(9, $meat_array[0]['c_lft']);
         static::assertSame(10, $meat_array[0]['c_rgt']);
-        static::assertSame(2, $meat_array[0]['c_level']);
+        static::assertSame(3, $meat_array[0]['c_level']);
     }
 
     public function testTreeChildPositionMove3(): void
@@ -116,7 +116,7 @@ final class NestedTreePositionTest extends BaseTestCaseORM
         $oranges = $repo->findOneBy(['title' => 'Oranges']);
         $milk = $repo->findOneBy(['title' => 'Milk']);
 
-        static::assertSame(2, $oranges->getLevel());
+        static::assertSame(3, $oranges->getLevel());
         static::assertSame(7, $oranges->getLeft());
         static::assertSame(8, $oranges->getRight());
 
@@ -126,17 +126,17 @@ final class NestedTreePositionTest extends BaseTestCaseORM
         static::assertSame(7, $oranges->getLeft());
         static::assertSame(8, $oranges->getRight());
 
-        //Normal test that pass
+        // Normal test that pass
         static::assertSame(9, $milk->getLeft());
         static::assertSame(10, $milk->getRight());
 
         // Raw query to show the issue #108 with wrong left value by Doctrine
         $dql = 'SELECT c FROM '.self::ROOT_CATEGORY.' c';
-        $dql .= ' WHERE c.id = 4 '; //4 == Milk
+        $dql .= ' WHERE c.id = 4 '; // 4 == Milk
         $milk_array = $this->em->createQuery($dql)->getScalarResult();
         static::assertSame(9, $milk_array[0]['c_lft']);
         static::assertSame(10, $milk_array[0]['c_rgt']);
-        static::assertSame(2, $milk_array[0]['c_level']);
+        static::assertSame(3, $milk_array[0]['c_level']);
     }
 
     public function testPositionedUpdates(): void
@@ -177,12 +177,12 @@ final class NestedTreePositionTest extends BaseTestCaseORM
         $oranges = $repo->findOneBy(['title' => 'Oranges']);
         $fruits = $repo->findOneBy(['title' => 'Fruits']);
 
-        static::assertSame(2, $oranges->getLevel());
+        static::assertSame(3, $oranges->getLevel());
 
         $repo->persistAsNextSiblingOf($oranges, $fruits);
         $this->em->flush();
 
-        static::assertSame(1, $oranges->getLevel());
+        static::assertSame(2, $oranges->getLevel());
         static::assertCount(1, $repo->children($fruits, true));
 
         $vegies = $repo->findOneBy(['title' => 'Vegitables']);
@@ -230,7 +230,7 @@ final class NestedTreePositionTest extends BaseTestCaseORM
 
         $this->em->flush();
         $dql = 'SELECT COUNT(c) FROM '.self::ROOT_CATEGORY.' c';
-        $dql .= ' WHERE c.lft = 1 AND c.rgt = 2 AND c.parent IS NULL AND c.level = 0';
+        $dql .= ' WHERE c.lft = 1 AND c.rgt = 2 AND c.parent IS NULL AND c.level = 1';
         $count = $this->em->createQuery($dql)->getSingleScalarResult();
         static::assertSame(6, (int) $count);
 

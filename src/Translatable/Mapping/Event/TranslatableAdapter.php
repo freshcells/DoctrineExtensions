@@ -9,6 +9,7 @@
 
 namespace Gedmo\Translatable\Mapping\Event;
 
+use Doctrine\Persistence\Mapping\ClassMetadata;
 use Gedmo\Mapping\Event\AdapterInterface;
 use Gedmo\Tool\Wrapper\AbstractWrapper;
 
@@ -34,6 +35,7 @@ interface TranslatableAdapter extends AdapterInterface
      * Get the default translation class used to store translations.
      *
      * @return string
+     *
      * @phpstan-return class-string
      */
     public function getDefaultTranslationClass();
@@ -49,7 +51,7 @@ interface TranslatableAdapter extends AdapterInterface
      * @phpstan-param class-string $translationClass
      * @phpstan-param class-string $objectClass
      *
-     * @return array
+     * @return array<int, array<string, mixed>>
      */
     public function loadTranslations($object, $translationClass, $locale, $objectClass);
 
@@ -61,6 +63,7 @@ interface TranslatableAdapter extends AdapterInterface
      * @param string $translationClass
      * @param string $objectClass
      *
+     * @phpstan-param AbstractWrapper<ClassMetadata<object>> $wrapped
      * @phpstan-param class-string $translationClass
      * @phpstan-param class-string $objectClass
      *
@@ -74,10 +77,11 @@ interface TranslatableAdapter extends AdapterInterface
      * @param string $transClass
      * @param string $objectClass
      *
+     * @phpstan-param AbstractWrapper<ClassMetadata<object>> $wrapped
      * @phpstan-param class-string $transClass
      * @phpstan-param class-string $objectClass
      *
-     * @return void
+     * @return int
      */
     public function removeAssociatedTranslations(AbstractWrapper $wrapped, $transClass, $objectClass);
 

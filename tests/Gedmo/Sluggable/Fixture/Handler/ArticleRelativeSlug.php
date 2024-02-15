@@ -35,23 +35,22 @@ class ArticleRelativeSlug
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(length=64)
      */
     #[ORM\Column(length: 64)]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @var string|null
      *
      * @Gedmo\Slug(handlers={
-     *      @Gedmo\SlugHandler(class="Gedmo\Sluggable\Handler\RelativeSlugHandler", options={
-     *          @Gedmo\SlugHandlerOption(name="relationField", value="article"),
-     *          @Gedmo\SlugHandlerOption(name="relationSlugField", value="slug"),
-     *          @Gedmo\SlugHandlerOption(name="separator", value="/")
-     *      })
+     *     @Gedmo\SlugHandler(class="Gedmo\Sluggable\Handler\RelativeSlugHandler", options={
+     *         @Gedmo\SlugHandlerOption(name="relationField", value="article"),
+     *         @Gedmo\SlugHandlerOption(name="relationSlugField", value="slug"),
+     *         @Gedmo\SlugHandlerOption(name="separator", value="/")
+     *     })
      * }, separator="-", updatable=true, fields={"title"})
+     *
      * @ORM\Column(name="slug", type="string", length=64, unique=true)
      */
     #[Gedmo\Slug(separator: '-', updatable: true, fields: ['title'])]
@@ -60,14 +59,12 @@ class ArticleRelativeSlug
     private $slug;
 
     /**
-     * @var Article|null
-     *
      * @ORM\ManyToOne(targetEntity="Article")
      */
     #[ORM\ManyToOne(targetEntity: Article::class)]
-    private $article;
+    private ?Article $article = null;
 
-    public function setArticle(Article $article = null): void
+    public function setArticle(?Article $article = null): void
     {
         $this->article = $article;
     }

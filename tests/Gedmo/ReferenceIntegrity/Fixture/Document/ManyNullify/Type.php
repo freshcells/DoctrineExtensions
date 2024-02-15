@@ -27,6 +27,7 @@ class Type
      * @var Collection<int, Article>
      *
      * @ODM\ReferenceMany(targetDocument="Gedmo\Tests\ReferenceIntegrity\Fixture\Document\ManyNullify\Article", mappedBy="type")
+     *
      * @Gedmo\ReferenceIntegrity("nullify")
      */
     #[ODM\ReferenceMany(targetDocument: Article::class, mappedBy: 'type')]
@@ -42,20 +43,16 @@ class Type
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ODM\Field(type="string")
      */
     #[ODM\Field(type: MongoDBType::STRING)]
-    private $title;
+    private ?string $title = null;
 
     /**
-     * @var string|null
-     *
      * @ODM\Field(type="string")
      */
     #[ODM\Field(type: MongoDBType::STRING)]
-    private $identifier;
+    private ?string $identifier = null;
 
     public function __construct()
     {

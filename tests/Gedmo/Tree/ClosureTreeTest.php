@@ -22,6 +22,7 @@ use Gedmo\Tests\Tree\Fixture\Closure\News;
 use Gedmo\Tests\Tree\Fixture\Closure\Person;
 use Gedmo\Tests\Tree\Fixture\Closure\PersonClosure;
 use Gedmo\Tests\Tree\Fixture\Closure\User;
+use Gedmo\Tree\Entity\MappedSuperclass\AbstractClosure;
 use Gedmo\Tree\Strategy\ORM\Closure;
 use Gedmo\Tree\TreeListener;
 
@@ -33,15 +34,18 @@ use Gedmo\Tree\TreeListener;
  */
 final class ClosureTreeTest extends BaseTestCaseORM
 {
-    public const CATEGORY = Category::class;
-    public const CLOSURE = CategoryClosure::class;
-    public const PERSON = Person::class;
-    public const USER = User::class;
-    public const PERSON_CLOSURE = PersonClosure::class;
-    public const NEWS = News::class;
-    public const CATEGORY_WITHOUT_LEVEL = CategoryWithoutLevel::class;
-    public const CATEGORY_WITHOUT_LEVEL_CLOSURE = CategoryWithoutLevelClosure::class;
+    private const CATEGORY = Category::class;
+    private const CLOSURE = CategoryClosure::class;
+    private const PERSON = Person::class;
+    private const USER = User::class;
+    private const PERSON_CLOSURE = PersonClosure::class;
+    private const NEWS = News::class;
+    private const CATEGORY_WITHOUT_LEVEL = CategoryWithoutLevel::class;
+    private const CATEGORY_WITHOUT_LEVEL_CLOSURE = CategoryWithoutLevelClosure::class;
 
+    /**
+     * @var TreeListener
+     */
     protected $listener;
 
     protected function setUp(): void
@@ -103,7 +107,6 @@ final class ClosureTreeTest extends BaseTestCaseORM
     public function testClosureTree(): void
     {
         $repo = $this->em->getRepository(self::CATEGORY);
-        $closureRepo = $this->em->getRepository(self::CLOSURE);
 
         $food = $repo->findOneBy(['title' => 'Food']);
         $dql = 'SELECT c FROM '.self::CLOSURE.' c';
@@ -309,6 +312,53 @@ final class ClosureTreeTest extends BaseTestCaseORM
         static::assertNotNull($categoryTwo->getId());
     }
 
+    /**
+     * @dataProvider provideNodeOrders
+     */
+    public function testClosuresCreatedMustNotBeAffectedByPersistOrder(Category $firstToPersist, Category $secondToPersist, Category $thirdToPersist): void
+    {
+        $evm = new EventManager();
+        $evm->addEventSubscriber($this->listener);
+
+        $this->getDefaultMockSqliteEntityManager($evm);
+
+        $this->em->persist($firstToPersist);
+        $this->em->persist($secondToPersist);
+        $this->em->persist($thirdToPersist);
+        $this->em->flush();
+        $this->em->clear();
+
+        $closures = $this->em->getRepository(CategoryClosure::class)->findAll();
+
+        static::assertCount(6, $closures);
+    }
+
+    /**
+     * @return array<string, array<int, Category>>
+     */
+    public static function provideNodeOrders(): array
+    {
+        $grandpa = new Category();
+        $grandpa->setTitle('grandpa');
+
+        $father = new Category();
+        $father->setTitle('father');
+        $father->setParent($grandpa);
+
+        $son = new Category();
+        $son->setTitle('son');
+        $son->setParent($father);
+
+        return [
+            'order-123' => [$grandpa, $father, $son],
+            'order-132' => [$grandpa, $son, $father],
+            'order-213' => [$father, $grandpa, $son],
+            'order-231' => [$father, $son, $grandpa],
+            'order-312' => [$son, $grandpa, $father],
+            'order-321' => [$son, $father, $grandpa],
+        ];
+    }
+
     protected function getUsedEntityFixtures(): array
     {
         return [
@@ -323,6 +373,9 @@ final class ClosureTreeTest extends BaseTestCaseORM
         ];
     }
 
+    /**
+     * @param iterable<int, AbstractClosure> $closures
+     */
     private function hasAncestor(iterable $closures, string $name): bool
     {
         foreach ($closures as $closure) {

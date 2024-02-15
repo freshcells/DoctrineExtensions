@@ -15,12 +15,20 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Query;
 use Doctrine\ORM\QueryBuilder;
 use Gedmo\Exception\InvalidArgumentException;
+use Gedmo\Exception\InvalidMappingException;
 use Gedmo\Tool\Wrapper\EntityWrapper;
 use Gedmo\Tree\RepositoryInterface;
 use Gedmo\Tree\RepositoryUtils;
 use Gedmo\Tree\RepositoryUtilsInterface;
 use Gedmo\Tree\TreeListener;
 
+/**
+ * @template T of object
+ *
+ * @template-extends EntityRepository<T>
+ *
+ * @template-implements RepositoryInterface<T>
+ */
 abstract class AbstractTreeRepository extends EntityRepository implements RepositoryInterface
 {
     /**
@@ -33,15 +41,16 @@ abstract class AbstractTreeRepository extends EntityRepository implements Reposi
     /**
      * Repository utils
      *
-     * @var RepositoryUtils
+     * @var RepositoryUtilsInterface
      */
     protected $repoUtils;
 
+    /** @param ClassMetadata<T> $class */
     public function __construct(EntityManagerInterface $em, ClassMetadata $class)
     {
         parent::__construct($em, $class);
         $treeListener = null;
-        foreach ($em->getEventManager()->getListeners() as $listeners) {
+        foreach ($em->getEventManager()->getAllListeners() as $listeners) {
             foreach ($listeners as $listener) {
                 if ($listener instanceof TreeListener) {
                     $treeListener = $listener;
@@ -52,15 +61,15 @@ abstract class AbstractTreeRepository extends EntityRepository implements Reposi
         }
 
         if (null === $treeListener) {
-            throw new \Gedmo\Exception\InvalidMappingException('Tree listener was not found on your entity manager, it must be hooked into the event manager');
+            throw new InvalidMappingException('Tree listener was not found on your entity manager, it must be hooked into the event manager');
         }
 
         $this->listener = $treeListener;
         if (!$this->validate()) {
-            throw new \Gedmo\Exception\InvalidMappingException('This repository cannot be used for tree type: '.$treeListener->getStrategy($em, $class->getName())->getName());
+            throw new InvalidMappingException('This repository cannot be used for tree type: '.$treeListener->getStrategy($em, $class->getName())->getName());
         }
 
-        $this->repoUtils = new RepositoryUtils($this->_em, $this->getClassMetadata(), $this->listener, $this);
+        $this->repoUtils = new RepositoryUtils($this->getEntityManager(), $this->getClassMetadata(), $this->listener, $this);
     }
 
     /**
@@ -78,7 +87,7 @@ abstract class AbstractTreeRepository extends EntityRepository implements Reposi
     /**
      * Returns the RepositoryUtilsInterface instance
      *
-     * @return \Gedmo\Tree\RepositoryUtilsInterface|null
+     * @return RepositoryUtilsInterface|null
      */
     public function getRepoUtils()
     {
@@ -94,7 +103,7 @@ abstract class AbstractTreeRepository extends EntityRepository implements Reposi
                 throw new InvalidArgumentException('Node is not related to this repository');
             }
 
-            $wrapped = new EntityWrapper($node, $this->_em);
+            $wrapped = new EntityWrapper($node, $this->getEntityManager());
 
             if (!$wrapped->hasValidIdentifier()) {
                 throw new InvalidArgumentException('Node is not managed by UnitOfWork');
@@ -164,8 +173,8 @@ abstract class AbstractTreeRepository extends EntityRepository implements Reposi
     /**
      * Get all root nodes query builder
      *
-     * @param string|null $sortByField Sort by field
-     * @param string      $direction   Sort direction ("asc" or "desc")
+     * @param string|string[]|null $sortByField Sort by field
+     * @param string|string[]      $direction   Sort direction ("asc" or "desc")
      *
      * @return QueryBuilder QueryBuilder object
      */
@@ -174,8 +183,8 @@ abstract class AbstractTreeRepository extends EntityRepository implements Reposi
     /**
      * Get all root nodes query
      *
-     * @param string|null $sortByField Sort by field
-     * @param string      $direction   Sort direction ("asc" or "desc")
+     * @param string|string[]|null $sortByField Sort by field
+     * @param string|string[]      $direction   Sort direction ("asc" or "desc")
      *
      * @return Query Query object
      */
@@ -184,10 +193,10 @@ abstract class AbstractTreeRepository extends EntityRepository implements Reposi
     /**
      * Returns a QueryBuilder configured to return an array of nodes suitable for buildTree method
      *
-     * @param object $node        Root node
-     * @param bool   $direct      Obtain direct children?
-     * @param array  $options     Options
-     * @param bool   $includeNode Include node in results?
+     * @param object               $node        Root node
+     * @param bool                 $direct      Obtain direct children?
+     * @param array<string, mixed> $options     Options
+     * @param bool                 $includeNode Include node in results?
      *
      * @return QueryBuilder QueryBuilder object
      */
@@ -196,10 +205,10 @@ abstract class AbstractTreeRepository extends EntityRepository implements Reposi
     /**
      * Returns a Query configured to return an array of nodes suitable for buildTree method
      *
-     * @param object $node        Root node
-     * @param bool   $direct      Obtain direct children?
-     * @param array  $options     Options
-     * @param bool   $includeNode Include node in results?
+     * @param object               $node        Root node
+     * @param bool                 $direct      Obtain direct children?
+     * @param array<string, mixed> $options     Options
+     * @param bool                 $includeNode Include node in results?
      *
      * @return Query Query object
      */
@@ -208,26 +217,30 @@ abstract class AbstractTreeRepository extends EntityRepository implements Reposi
     /**
      * Get list of children followed by given $node. This returns a QueryBuilder object
      *
-     * @param object|null $node        if null, all tree nodes will be taken
-     * @param bool        $direct      true to take only direct children
-     * @param string      $sortByField field name to sort by
-     * @param string      $direction   sort direction : "ASC" or "DESC"
-     * @param bool        $includeNode Include the root node in results?
+     * @param object|null          $node        If null, all tree nodes will be taken
+     * @param bool                 $direct      True to take only direct children
+     * @param string|string[]|null $sortByField Field name or array of fields names to sort by
+     * @param string|string[]      $direction   Sort order ('asc'|'desc'|'ASC'|'DESC'). If $sortByField is an array, this may also be an array with matching number of elements
+     * @param bool                 $includeNode Include the root node in results?
      *
      * @return QueryBuilder QueryBuilder object
+     *
+     * @phpstan-param 'asc'|'desc'|'ASC'|'DESC'|array<int, 'asc'|'desc'|'ASC'|'DESC'> $direction
      */
     abstract public function getChildrenQueryBuilder($node = null, $direct = false, $sortByField = null, $direction = 'ASC', $includeNode = false);
 
     /**
      * Get list of children followed by given $node. This returns a Query
      *
-     * @param object|null $node        if null, all tree nodes will be taken
-     * @param bool        $direct      true to take only direct children
-     * @param string      $sortByField field name to sort by
-     * @param string      $direction   sort direction : "ASC" or "DESC"
-     * @param bool        $includeNode Include the root node in results?
+     * @param object|null          $node        If null, all tree nodes will be taken
+     * @param bool                 $direct      True to take only direct children
+     * @param string|string[]|null $sortByField Field name or array of fields names to sort by
+     * @param string|string[]      $direction   Sort order ('asc'|'desc'|'ASC'|'DESC'). If $sortByField is an array, this may also be an array with matching number of elements
+     * @param bool                 $includeNode Include the root node in results?
      *
      * @return Query Query object
+     *
+     * @phpstan-param 'asc'|'desc'|'ASC'|'DESC'|array<int, 'asc'|'desc'|'ASC'|'DESC'> $direction
      */
     abstract public function getChildrenQuery($node = null, $direct = false, $sortByField = null, $direction = 'ASC', $includeNode = false);
 

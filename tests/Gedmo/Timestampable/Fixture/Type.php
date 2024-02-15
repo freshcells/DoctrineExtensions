@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace Gedmo\Tests\Timestampable\Fixture;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -33,18 +35,23 @@ class Type
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="title", type="string", length=128)
      */
     #[ORM\Column(name: 'title', type: Types::STRING, length: 128)]
-    private $title;
+    private ?string $title = null;
 
     /**
+     * @var Collection<int, Article>
+     *
      * @ORM\OneToMany(targetEntity="Article", mappedBy="type")
      */
     #[ORM\OneToMany(targetEntity: Article::class, mappedBy: 'type')]
-    private $articles;
+    private Collection $articles;
+
+    public function __construct()
+    {
+        $this->articles = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {

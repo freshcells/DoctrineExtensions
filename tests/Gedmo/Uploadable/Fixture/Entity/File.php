@@ -17,6 +17,7 @@ use Gedmo\Mapping\Annotation as Gedmo;
 
 /**
  * @ORM\Entity
+ *
  * @Gedmo\Uploadable(allowOverwrite=true, pathMethod="getPath", callback="callbackMethod")
  */
 #[ORM\Entity]
@@ -41,32 +42,27 @@ class File
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="title", type="string", nullable=true)
      */
     #[ORM\Column(name: 'title', type: Types::STRING, nullable: true)]
-    private $title;
+    private ?string $title = null;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="path", type="string")
+     *
      * @Gedmo\UploadableFilePath
      */
     #[ORM\Column(name: 'path', type: Types::STRING)]
     #[Gedmo\UploadableFilePath]
-    private $filePath;
+    private ?string $filePath = null;
 
     /**
-     * @var Article|null
-     *
      * @ORM\ManyToOne(targetEntity="Article", inversedBy="files")
      * @ORM\JoinColumn(name="article_id", referencedColumnName="id")
      */
     #[ORM\ManyToOne(targetEntity: Article::class, inversedBy: 'files')]
     #[ORM\JoinColumn(name: 'article_id', referencedColumnName: 'id')]
-    private $article;
+    private ?Article $article = null;
 
     public function getId(): ?int
     {

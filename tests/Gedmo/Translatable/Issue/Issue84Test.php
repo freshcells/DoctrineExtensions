@@ -12,7 +12,7 @@ declare(strict_types=1);
 namespace Gedmo\Tests\Translatable\Issue;
 
 use Doctrine\Common\EventManager;
-use Doctrine\ORM\Proxy\Proxy;
+use Doctrine\Persistence\Proxy;
 use Gedmo\Tests\Tool\BaseTestCaseORM;
 use Gedmo\Tests\Translatable\Fixture\Article;
 use Gedmo\Translatable\Entity\Translation;
@@ -25,10 +25,10 @@ use Gedmo\Translatable\TranslatableListener;
  */
 final class Issue84Test extends BaseTestCaseORM
 {
-    public const ARTICLE = Article::class;
-    public const TRANSLATION = Translation::class;
+    private const ARTICLE = Article::class;
+    private const TRANSLATION = Translation::class;
 
-    private $translatableListener;
+    private TranslatableListener $translatableListener;
 
     protected function setUp(): void
     {

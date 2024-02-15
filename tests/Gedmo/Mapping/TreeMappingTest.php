@@ -11,8 +11,10 @@ declare(strict_types=1);
 
 namespace Gedmo\Tests\Mapping;
 
-use Doctrine\Common\EventManager;
+use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Mapping\Driver\AnnotationDriver;
+use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\Mapping\Driver\YamlDriver;
 use Doctrine\Persistence\Mapping\Driver\MappingDriverChain;
 use Gedmo\Mapping\ExtensionMetadataFactory;
@@ -29,50 +31,41 @@ use Gedmo\Tree\TreeListener;
  */
 final class TreeMappingTest extends ORMMappingTestCase
 {
-    public const TEST_YAML_ENTITY_CLASS = Category::class;
-    public const YAML_CLOSURE_CATEGORY = ClosureCategory::class;
-    public const YAML_MATERIALIZED_PATH_CATEGORY = MaterializedPathCategory::class;
+    private const TEST_YAML_ENTITY_CLASS = Category::class;
+    private const YAML_CLOSURE_CATEGORY = ClosureCategory::class;
+    private const YAML_MATERIALIZED_PATH_CATEGORY = MaterializedPathCategory::class;
 
-    /**
-     * @var EntityManager
-     */
-    private $em;
+    private EntityManager $em;
 
-    /**
-     * @var TreeListener
-     */
-    private $listener;
+    private TreeListener $listener;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $config = $this->getBasicConfiguration();
-        $chainDriverImpl = new MappingDriverChain();
-        $chainDriverImpl->addDriver(
-            new YamlDriver([__DIR__.'/Driver/Yaml']),
-            'Gedmo\Tests\Mapping\Fixture\Yaml'
-        );
-        $chainDriverImpl->addDriver(
-            $config->newDefaultAnnotationDriver([], false),
-            'Gedmo\Tests\Tree\Fixture'
-        );
-        $chainDriverImpl->addDriver(
-            $config->newDefaultAnnotationDriver([], false),
-            'Gedmo\Tree'
-        );
-        $config->setMetadataDriverImpl($chainDriverImpl);
 
-        $conn = [
-            'driver' => 'pdo_sqlite',
-            'memory' => true,
-        ];
+        $chain = new MappingDriverChain();
+
+        // TODO - The ORM's YAML mapping is deprecated and removed in 3.0
+        $chain->addDriver(new YamlDriver(__DIR__.'/Driver/Yaml'), 'Gedmo\Tests\Mapping\Fixture\Yaml');
+
+        if (PHP_VERSION_ID >= 80000) {
+            $annotationOrAttributeDriver = new AttributeDriver([]);
+        } else {
+            $annotationOrAttributeDriver = new AnnotationDriver(new AnnotationReader());
+        }
+
+        $chain->addDriver($annotationOrAttributeDriver, 'Gedmo\Tests\Tree\Fixture');
+        $chain->addDriver($annotationOrAttributeDriver, 'Gedmo\Tree');
+
+        $config->setMetadataDriverImpl($chain);
 
         $this->listener = new TreeListener();
         $this->listener->setCacheItemPool($this->cache);
-        $evm = new EventManager();
-        $evm->addEventSubscriber($this->listener);
-        $this->em = EntityManager::create($conn, $config, $evm);
+
+        $this->em = $this->getBasicEntityManager($config);
+        $this->em->getEventManager()->addEventSubscriber($this->listener);
     }
 
     /**
@@ -86,9 +79,9 @@ final class TreeMappingTest extends ORMMappingTestCase
         $this->em->getClassMetadata(self::YAML_CLOSURE_CATEGORY);
         $this->em->getClassMetadata(CategoryClosureWithoutMapping::class);
 
-        $meta = $this->em->getMetadataFactory()->getCacheDriver()->fetch(
+        $meta = $this->em->getConfiguration()->getMetadataCache()->getItem(
             'Gedmo__Tests__Tree__Fixture__Closure__CategoryClosureWithoutMapping__CLASSMETADATA__'
-        );
+        )->get();
         static::assertNotFalse($meta);
         static::assertTrue($meta->hasAssociation('ancestor'));
         static::assertTrue($meta->hasAssociation('descendant'));
@@ -121,7 +114,8 @@ final class TreeMappingTest extends ORMMappingTestCase
      */
     public function testYamlClosureMapping(): void
     {
-        $meta = $this->em->getClassMetadata(self::YAML_CLOSURE_CATEGORY);
+        // Force metadata class loading.
+        $this->em->getClassMetadata(self::YAML_CLOSURE_CATEGORY);
         $cacheId = ExtensionMetadataFactory::getCacheId(self::YAML_CLOSURE_CATEGORY, 'Gedmo\Tree');
         $config = $this->cache->getItem($cacheId)->get();
 

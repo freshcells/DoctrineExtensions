@@ -35,23 +35,22 @@ class User
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(length=64)
      */
     #[ORM\Column(length: 64)]
-    private $username;
+    private ?string $username = null;
 
     /**
      * @var string|null
      *
      * @Gedmo\Slug(handlers={
-     *      @Gedmo\SlugHandler(class="Gedmo\Sluggable\Handler\RelativeSlugHandler", options={
-     *          @Gedmo\SlugHandlerOption(name="relationField", value="company"),
-     *          @Gedmo\SlugHandlerOption(name="relationSlugField", value="alias"),
-     *          @Gedmo\SlugHandlerOption(name="separator", value="/")
-     *      })
+     *     @Gedmo\SlugHandler(class="Gedmo\Sluggable\Handler\RelativeSlugHandler", options={
+     *         @Gedmo\SlugHandlerOption(name="relationField", value="company"),
+     *         @Gedmo\SlugHandlerOption(name="relationSlugField", value="alias"),
+     *         @Gedmo\SlugHandlerOption(name="separator", value="/")
+     *     })
      * }, separator="-", updatable=true, fields={"username"})
+     *
      * @ORM\Column(length=64, unique=true)
      */
     #[Gedmo\Slug(separator: '-', updatable: true, fields: ['username'])]
@@ -60,14 +59,12 @@ class User
     private $slug;
 
     /**
-     * @var Company|null
-     *
      * @ORM\ManyToOne(targetEntity="Company")
      */
     #[ORM\ManyToOne(targetEntity: Company::class)]
-    private $company;
+    private ?Company $company = null;
 
-    public function setCompany(Company $company = null): void
+    public function setCompany(?Company $company = null): void
     {
         $this->company = $company;
     }

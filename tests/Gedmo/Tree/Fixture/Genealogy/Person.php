@@ -23,7 +23,8 @@ use Gedmo\Tree\Entity\Repository\NestedTreeRepository;
  * @ORM\Table(name="genealogy")
  * @ORM\InheritanceType("SINGLE_TABLE")
  * @ORM\DiscriminatorColumn(name="discr", type="string")
- * @ORM\DiscriminatorMap({"man" = "Man", "woman" = "Woman"})
+ * @ORM\DiscriminatorMap({"man": "Man", "woman": "Woman"})
+ *
  * @Gedmo\Tree(type="nested")
  */
 #[ORM\Entity(repositoryClass: NestedTreeRepository::class)]
@@ -55,19 +56,19 @@ abstract class Person
     private $id;
 
     /**
-     * @var self|null
-     *
      * @Gedmo\TreeParent
+     *
      * @ORM\ManyToOne(targetEntity="Person", inversedBy="children")
      */
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
     #[Gedmo\TreeParent]
-    private $parent;
+    private ?Person $parent = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeLeft
+     *
      * @ORM\Column(name="lft", type="integer")
      */
     #[ORM\Column(name: 'lft', type: Types::INTEGER)]
@@ -78,6 +79,7 @@ abstract class Person
      * @var int|null
      *
      * @Gedmo\TreeRight
+     *
      * @ORM\Column(name="rgt", type="integer")
      */
     #[ORM\Column(name: 'rgt', type: Types::INTEGER)]
@@ -88,6 +90,7 @@ abstract class Person
      * @var int|null
      *
      * @Gedmo\TreeLevel
+     *
      * @ORM\Column(name="lvl", type="integer")
      */
     #[ORM\Column(name: 'lvl', type: Types::INTEGER)]
@@ -95,12 +98,10 @@ abstract class Person
     private $lvl;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="name", type="string", length=191, nullable=false)
      */
     #[ORM\Column(name: 'name', type: Types::STRING, length: 191, nullable: false)]
-    private $name;
+    private string $name;
 
     public function __construct(string $name)
     {
@@ -115,7 +116,7 @@ abstract class Person
         return $this;
     }
 
-    public function getName(): ?string
+    public function getName(): string
     {
         return $this->name;
     }

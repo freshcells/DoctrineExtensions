@@ -35,12 +35,10 @@ class Comment implements Timestampable
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="message", type="text")
      */
     #[ORM\Column(name: 'message', type: Types::TEXT)]
-    private $message;
+    private ?string $message = null;
 
     /**
      * @var Article|null
@@ -51,17 +49,16 @@ class Comment implements Timestampable
     private $article;
 
     /**
-     * @var int|null
-     *
      * @ORM\Column(type="integer")
      */
     #[ORM\Column(type: Types::INTEGER)]
-    private $status;
+    private ?int $status = null;
 
     /**
      * @var \DateTime|null
      *
      * @ORM\Column(name="closed", type="datetime", nullable=true)
+     *
      * @Gedmo\Timestampable(on="change", field="status", value=1)
      */
     #[ORM\Column(name: 'closed', type: Types::DATETIME_MUTABLE, nullable: true)]
@@ -72,13 +69,17 @@ class Comment implements Timestampable
      * @var \DateTime|null
      *
      * @ORM\Column(name="modified", type="time")
+     *
      * @Gedmo\Timestampable(on="update")
      */
     #[ORM\Column(name: 'modified', type: Types::TIME_MUTABLE)]
     #[Gedmo\Timestampable(on: 'update')]
     private $modified;
 
-    public function setArticle(?Article $article): void
+    /**
+     * @param Article|ArticleCarbon $article
+     */
+    public function setArticle(?Timestampable $article): void
     {
         $this->article = $article;
     }

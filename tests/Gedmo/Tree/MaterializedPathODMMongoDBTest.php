@@ -29,7 +29,7 @@ final class MaterializedPathODMMongoDBTest extends BaseTestCaseMongoODM
     private const CATEGORY = Category::class;
 
     /**
-     * @var array
+     * @var array<string, mixed>
      */
     protected $config;
 
@@ -111,7 +111,7 @@ final class MaterializedPathODMMongoDBTest extends BaseTestCaseMongoODM
         $this->dm->remove($category2);
         $this->dm->flush();
 
-        $result = $this->dm->createQueryBuilder()->find(self::CATEGORY)->getQuery()->execute();
+        $result = $this->dm->createQueryBuilder()->find(self::CATEGORY)->getQuery()->getIterator();
 
         static::assertInstanceOf(Iterator::class, $result);
 
@@ -134,14 +134,17 @@ final class MaterializedPathODMMongoDBTest extends BaseTestCaseMongoODM
         $this->dm->flush();
     }
 
-    public function createCategory()
+    private function createCategory(): Category
     {
         $class = self::CATEGORY;
 
         return new $class();
     }
 
-    public function generatePath(array $sources): string
+    /**
+     * @param array<int|string, int|string|null> $sources
+     */
+    private function generatePath(array $sources): string
     {
         $path = '';
 

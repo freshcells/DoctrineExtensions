@@ -9,34 +9,49 @@
 
 namespace Gedmo\Mapping\Annotation;
 
-use Attribute;
 use Doctrine\Common\Annotations\Annotation;
+use Doctrine\Deprecations\Deprecation;
 use Gedmo\Mapping\Annotation\Annotation as GedmoAnnotation;
 
 /**
  * TreeRoot annotation for Tree behavioral extension
  *
  * @Annotation
+ *
  * @NamedArgumentConstructor
+ *
  * @Target("PROPERTY")
  *
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
  */
-#[Attribute(Attribute::TARGET_PROPERTY)]
+#[\Attribute(\Attribute::TARGET_PROPERTY)]
 final class TreeRoot implements GedmoAnnotation
 {
+    use ForwardCompatibilityTrait;
+
     /** @var string|null */
     public $identifierMethod;
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function __construct(array $data = [], ?string $identifierMethod = null)
     {
         if ([] !== $data) {
-            @trigger_error(sprintf(
+            Deprecation::trigger(
+                'gedmo/doctrine-extensions',
+                'https://github.com/doctrine-extensions/DoctrineExtensions/pull/2388',
                 'Passing an array as first argument to "%s()" is deprecated. Use named arguments instead.',
                 __METHOD__
-            ), E_USER_DEPRECATED);
+            );
+
+            $args = func_get_args();
+
+            $this->identifierMethod = $this->getAttributeValue($data, 'identifierMethod', $args, 1, $identifierMethod);
+
+            return;
         }
 
-        $this->identifierMethod = $data['identifierMethod'] ?? $identifierMethod;
+        $this->identifierMethod = $identifierMethod;
     }
 }

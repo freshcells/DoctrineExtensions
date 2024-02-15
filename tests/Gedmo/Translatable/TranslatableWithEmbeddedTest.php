@@ -22,15 +22,12 @@ use Gedmo\Translatable\TranslatableListener;
 
 final class TranslatableWithEmbeddedTest extends BaseTestCaseORM
 {
-    public const FIXTURE = Company::class;
-    public const TRANSLATION = Translation::class;
+    private const FIXTURE = Company::class;
+    private const TRANSLATION = Translation::class;
 
-    public const TREE_WALKER_TRANSLATION = TranslationWalker::class;
+    private const TREE_WALKER_TRANSLATION = TranslationWalker::class;
 
-    /**
-     * @var TranslatableListener
-     */
-    private $translatableListener;
+    private TranslatableListener $translatableListener;
 
     protected function setUp(): void
     {
@@ -68,7 +65,7 @@ final class TranslatableWithEmbeddedTest extends BaseTestCaseORM
 
     public function testTranslate(): void
     {
-        /** @var EntityRepository $repo */
+        /** @var EntityRepository<Company> $repo */
         $repo = $this->em->getRepository(self::FIXTURE);
 
         /** @var Company $entity */

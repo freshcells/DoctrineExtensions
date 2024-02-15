@@ -18,6 +18,7 @@ use Gedmo\Tree\Document\MongoDB\Repository\MaterializedPathRepository;
 
 /**
  * @Mongo\Document(repositoryClass="Gedmo\Tree\Document\MongoDB\Repository\MaterializedPathRepository")
+ *
  * @Gedmo\Tree(type="materializedPath", activateLocking=true)
  */
 #[Mongo\Document(repositoryClass: MaterializedPathRepository::class)]
@@ -33,19 +34,19 @@ class Article
     private $id;
 
     /**
-     * @var string|null
-     *
      * @Mongo\Field(type="string")
+     *
      * @Gedmo\TreePathSource
      */
     #[Mongo\Field(type: Type::STRING)]
     #[Gedmo\TreePathSource]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @var string|null
      *
      * @Mongo\Field(type="string")
+     *
      * @Gedmo\TreePath(separator="|")
      */
     #[Mongo\Field(type: Type::STRING)]
@@ -53,19 +54,19 @@ class Article
     private $path;
 
     /**
-     * @var self|null
-     *
      * @Gedmo\TreeParent
-     * @Mongo\ReferenceOne(targetDocument="Article")
+     *
+     * @Mongo\ReferenceOne(targetDocument="Gedmo\Tests\Tree\Fixture\Document\Article")
      */
     #[Mongo\ReferenceOne(targetDocument: self::class)]
     #[Gedmo\TreeParent]
-    private $parent;
+    private ?Article $parent = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeLevel
+     *
      * @Mongo\Field(type="int")
      */
     #[Mongo\Field(type: Type::INT)]
@@ -76,6 +77,7 @@ class Article
      * @var \DateTime|null
      *
      * @Gedmo\TreeLockTime
+     *
      * @Mongo\Field(type="date")
      */
     #[Mongo\Field(type: Type::DATE)]
@@ -97,7 +99,7 @@ class Article
         return $this->title;
     }
 
-    public function setParent(self $parent = null): void
+    public function setParent(?self $parent = null): void
     {
         $this->parent = $parent;
     }

@@ -25,6 +25,7 @@ class Type
      * @var Article|null
      *
      * @ODM\ReferenceOne(targetDocument="Gedmo\Tests\ReferenceIntegrity\Fixture\Document\OneRestrict\Article", mappedBy="type")
+     *
      * @Gedmo\ReferenceIntegrity("restrict")
      */
     #[ODM\ReferenceOne(targetDocument: Article::class, mappedBy: 'type')]
@@ -40,20 +41,16 @@ class Type
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ODM\Field(type="string")
      */
     #[ODM\Field(type: MongoDBType::STRING)]
-    private $title;
+    private ?string $title = null;
 
     /**
-     * @var string|null
-     *
      * @ODM\Field(type="string")
      */
     #[ODM\Field(type: MongoDBType::STRING)]
-    private $identifier;
+    private ?string $identifier = null;
 
     public function getId(): ?string
     {

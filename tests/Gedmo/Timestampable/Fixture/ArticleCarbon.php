@@ -11,6 +11,9 @@ declare(strict_types=1);
 
 namespace Gedmo\Tests\Timestampable\Fixture;
 
+use Carbon\Carbon;
+use Carbon\CarbonImmutable;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -36,20 +39,16 @@ class ArticleCarbon implements Timestampable
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="title", type="string", length=128)
      */
     #[ORM\Column(name: 'title', type: Types::STRING, length: 128)]
-    private $title;
+    private ?string $title = null;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="body", type="string")
      */
     #[ORM\Column(name: 'body', type: Types::STRING)]
-    private $body;
+    private ?string $body = null;
 
     /**
      * @var Collection<int, Comment>
@@ -60,17 +59,16 @@ class ArticleCarbon implements Timestampable
     private $comments;
 
     /**
-     * @var Author|null
-     *
      * @ORM\Embedded(class="Gedmo\Tests\Timestampable\Fixture\Author")
      */
     #[ORM\Embedded(class: Author::class)]
-    private $author;
+    private ?Author $author = null;
 
     /**
-     * @var \Carbon\Carbon|null
+     * @var \DateTime|Carbon|null
      *
      * @Gedmo\Timestampable(on="create")
+     *
      * @ORM\Column(name="created", type="date")
      */
     #[Gedmo\Timestampable(on: 'create')]
@@ -78,9 +76,10 @@ class ArticleCarbon implements Timestampable
     private $created;
 
     /**
-     * @var \Carbon\CarbonImmutable|null
+     * @var \DateTime|CarbonImmutable|null
      *
      * @ORM\Column(name="updated", type="datetime")
+     *
      * @Gedmo\Timestampable
      */
     #[ORM\Column(name: 'updated', type: Types::DATETIME_MUTABLE)]
@@ -88,9 +87,10 @@ class ArticleCarbon implements Timestampable
     private $updated;
 
     /**
-     * @var \Carbon\CarbonImmutable|null
+     * @var \DateTime|CarbonImmutable|null
      *
      * @ORM\Column(name="published", type="datetime", nullable=true)
+     *
      * @Gedmo\Timestampable(on="change", field="type.title", value="Published")
      */
     #[ORM\Column(name: 'published', type: Types::DATETIME_MUTABLE, nullable: true)]
@@ -98,18 +98,21 @@ class ArticleCarbon implements Timestampable
     private $published;
 
     /**
-     * @var \Carbon\CarbonImmutable|null
+     * @var \DateTime|CarbonImmutable|null
      *
      * @ORM\Column(name="content_changed", type="datetime", nullable=true)
+     *
      * @Gedmo\Timestampable(on="change", field={"title", "body"})
      */
     #[ORM\Column(name: 'content_changed', type: Types::DATETIME_MUTABLE, nullable: true)]
     #[Gedmo\Timestampable(on: 'change', field: ['title', 'body'])]
     private $contentChanged;
+
     /**
-     * @var \Carbon\CarbonImmutable|null
+     * @var CarbonImmutable|null
      *
      * @ORM\Column(name="author_changed", type="datetime", nullable=true)
+     *
      * @Gedmo\Timestampable(on="change", field={"author.name", "author.email"})
      */
     #[ORM\Column(name: 'author_changed', type: Types::DATETIME_MUTABLE, nullable: true)]
@@ -117,20 +120,16 @@ class ArticleCarbon implements Timestampable
     private $authorChanged;
 
     /**
-     * @var Type|null
-     *
      * @ORM\ManyToOne(targetEntity="Type", inversedBy="articles")
      */
     #[ORM\ManyToOne(targetEntity: Type::class, inversedBy: 'articles')]
-    private $type;
+    private ?Type $type = null;
 
     /**
-     * @var int|null
-     *
      * @ORM\Column(name="level", type="integer")
      */
     #[ORM\Column(name: 'level', type: Types::INTEGER)]
-    private $level = 0;
+    private int $level = 0;
 
     /**
      * We use the value "10" as string here in order to check the behavior of `AbstractTrackingListener`
@@ -138,11 +137,17 @@ class ArticleCarbon implements Timestampable
      * @var \DateTimeInterface|null
      *
      * @ORM\Column(name="reached_relevant_level", type="datetime", nullable=true)
+     *
      * @Gedmo\Timestampable(on="change", field="level", value="10")
      */
     #[ORM\Column(name: 'reached_relevant_level', type: Types::DATE_MUTABLE, nullable: true)]
     #[Gedmo\Timestampable(on: 'change', field: 'level', value: '10')]
     private $reachedRelevantLevel;
+
+    public function __construct()
+    {
+        $this->comments = new ArrayCollection();
+    }
 
     public function setType(?Type $type): void
     {
@@ -180,6 +185,9 @@ class ArticleCarbon implements Timestampable
         $this->comments[] = $comment;
     }
 
+    /**
+     * @return Collection<int, Comment>
+     */
     public function getComments(): Collection
     {
         return $this->comments;
@@ -195,47 +203,51 @@ class ArticleCarbon implements Timestampable
         $this->author = $author;
     }
 
-    public function getCreated(): ?\Carbon\Carbon
+    public function getCreated(): ?Carbon
     {
         return $this->created;
     }
 
-    public function setCreated(\DateTime $created): void
+    /** @param CarbonImmutable|\DateTime $created */
+    public function setCreated($created): void
     {
         $this->created = $created;
     }
 
-    public function getPublished(): ?\Carbon\CarbonImmutable
+    public function getPublished(): ?CarbonImmutable
     {
         return $this->published;
     }
 
-    public function setPublished(\DateTime $published): void
+    /** @param CarbonImmutable|\DateTime $published */
+    public function setPublished($published): void
     {
         $this->published = $published;
     }
 
-    public function getUpdated(): ?\Carbon\CarbonImmutable
+    public function getUpdated(): ?CarbonImmutable
     {
         return $this->updated;
     }
 
-    public function setUpdated(\DateTime $updated): void
+    /** @param CarbonImmutable|\DateTime $updated */
+    public function setUpdated($updated): void
     {
         $this->updated = $updated;
     }
 
-    public function setContentChanged(\DateTime $contentChanged): void
+    /** @param CarbonImmutable|\DateTime $contentChanged */
+    public function setContentChanged($contentChanged): void
     {
         $this->contentChanged = $contentChanged;
     }
 
-    public function getContentChanged(): ?\Carbon\CarbonImmutable
+    public function getContentChanged(): ?CarbonImmutable
     {
         return $this->contentChanged;
     }
 
-    public function getAuthorChanged(): ?\Carbon\CarbonImmutable
+    public function getAuthorChanged(): ?CarbonImmutable
     {
         return $this->authorChanged;
     }

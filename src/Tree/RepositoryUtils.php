@@ -9,24 +9,31 @@
 
 namespace Gedmo\Tree;
 
+use Doctrine\ODM\MongoDB\DocumentManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\Mapping\ClassMetadata;
 use Doctrine\Persistence\ObjectManager;
 use Gedmo\Exception\InvalidArgumentException;
 use Gedmo\Tool\Wrapper\EntityWrapper;
 use Gedmo\Tool\Wrapper\MongoDocumentWrapper;
 
+/**
+ * @final since gedmo/doctrine-extensions 3.11
+ *
+ * @template T of object
+ */
 class RepositoryUtils implements RepositoryUtilsInterface
 {
-    /** @var ClassMetadata */
+    /** @var ClassMetadata<T> */
     protected $meta;
 
     /** @var TreeListener */
     protected $listener;
 
-    /** @var ObjectManager */
+    /** @var ObjectManager&(DocumentManager|EntityManagerInterface) */
     protected $om;
 
-    /** @var RepositoryInterface */
+    /** @var RepositoryInterface<T> */
     protected $repo;
 
     /**
@@ -38,8 +45,10 @@ class RepositoryUtils implements RepositoryUtilsInterface
     protected $childrenIndex = '__children';
 
     /**
-     * @param TreeListener        $listener
-     * @param RepositoryInterface $repo
+     * @param ObjectManager&(DocumentManager|EntityManagerInterface) $om
+     * @param ClassMetadata<T>                                       $meta
+     * @param TreeListener                                           $listener
+     * @param RepositoryInterface<T>                                 $repo
      */
     public function __construct(ObjectManager $om, ClassMetadata $meta, $listener, $repo)
     {
@@ -50,7 +59,7 @@ class RepositoryUtils implements RepositoryUtilsInterface
     }
 
     /**
-     * @return ClassMetadata
+     * @return ClassMetadata<T>
      */
     public function getClassMetadata()
     {
@@ -63,7 +72,7 @@ class RepositoryUtils implements RepositoryUtilsInterface
 
         if (null !== $node) {
             if (is_a($node, $meta->getName())) {
-                $wrapperClass = $this->om instanceof \Doctrine\ORM\EntityManagerInterface ?
+                $wrapperClass = $this->om instanceof EntityManagerInterface ?
                     EntityWrapper::class :
                     MongoDocumentWrapper::class;
                 $wrapped = new $wrapperClass($node, $this->om);
@@ -111,7 +120,7 @@ class RepositoryUtils implements RepositoryUtilsInterface
             return $nestedTree;
         }
 
-        if (!count($nestedTree)) {
+        if ([] === $nestedTree) {
             return '';
         }
 
@@ -122,7 +131,7 @@ class RepositoryUtils implements RepositoryUtilsInterface
             foreach ($tree as $node) {
                 $output .= is_string($options['childOpen']) ? $options['childOpen'] : $options['childOpen']($node);
                 $output .= $options['nodeDecorator']($node);
-                if (count($node[$childrenIndex]) > 0) {
+                if ([] !== $node[$childrenIndex]) {
                     $output .= $build($node[$childrenIndex]);
                 }
                 $output .= is_string($options['childClose']) ? $options['childClose'] : $options['childClose']($node);
@@ -141,7 +150,7 @@ class RepositoryUtils implements RepositoryUtilsInterface
         $nestedTree = [];
         $l = 0;
 
-        if (count($nodes) > 0) {
+        if ([] !== $nodes) {
             // Node Stack. Used to help building the hierarchy
             $stack = [];
             foreach ($nodes as $child) {

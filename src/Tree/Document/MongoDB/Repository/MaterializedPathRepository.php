@@ -10,6 +10,8 @@
 namespace Gedmo\Tree\Document\MongoDB\Repository;
 
 use Doctrine\ODM\MongoDB\Iterator\Iterator;
+use Doctrine\ODM\MongoDB\Query\Builder;
+use Doctrine\ODM\MongoDB\Query\Query;
 use Gedmo\Exception\InvalidArgumentException;
 use Gedmo\Tool\Wrapper\MongoDocumentWrapper;
 use Gedmo\Tree\Strategy;
@@ -22,6 +24,10 @@ use MongoDB\BSON\Regex;
  *
  * @author Gustavo Falco <comfortablynumb84@gmail.com>
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
+ *
+ * @template T of object
+ *
+ * @template-extends AbstractTreeRepository<T>
  */
 class MaterializedPathRepository extends AbstractTreeRepository
 {
@@ -30,7 +36,7 @@ class MaterializedPathRepository extends AbstractTreeRepository
      *
      * @param object|null $rootNode
      *
-     * @return \Doctrine\ODM\MongoDB\Query\Builder
+     * @return Builder
      */
     public function getTreeQueryBuilder($rootNode = null)
     {
@@ -42,7 +48,7 @@ class MaterializedPathRepository extends AbstractTreeRepository
      *
      * @param object|null $rootNode
      *
-     * @return \Doctrine\ODM\MongoDB\Query\Query
+     * @return Query
      */
     public function getTreeQuery($rootNode = null)
     {
@@ -53,10 +59,12 @@ class MaterializedPathRepository extends AbstractTreeRepository
      * Get tree
      *
      * @param object|null $rootNode
+     *
+     * @phpstan-return Iterator<object>
      */
     public function getTree($rootNode = null): Iterator
     {
-        return $this->getTreeQuery($rootNode)->execute();
+        return $this->getTreeQuery($rootNode)->getIterator();
     }
 
     public function getRootNodesQueryBuilder($sortByField = null, $direction = 'asc')
@@ -71,7 +79,7 @@ class MaterializedPathRepository extends AbstractTreeRepository
 
     public function getRootNodes($sortByField = null, $direction = 'asc')
     {
-        return $this->getRootNodesQuery($sortByField, $direction)->execute();
+        return $this->getRootNodesQuery($sortByField, $direction)->getIterator();
     }
 
     public function childCount($node = null, $direct = false)
@@ -111,25 +119,31 @@ class MaterializedPathRepository extends AbstractTreeRepository
             $nodePath = preg_quote($node->getPropertyValue($config['path']));
 
             if ($direct) {
-                $regex = sprintf('^%s([^%s]+%s)'.($includeNode ? '?' : '').'$',
-                     $nodePath,
-                     $separator,
-                     $separator);
+                $regex = sprintf(
+                    '^%s([^%s]+%s)'.($includeNode ? '?' : '').'$',
+                    $nodePath,
+                    $separator,
+                    $separator
+                );
             } else {
-                $regex = sprintf('^%s(.+)'.($includeNode ? '?' : ''),
-                     $nodePath);
+                $regex = sprintf(
+                    '^%s(.+)'.($includeNode ? '?' : ''),
+                    $nodePath
+                );
             }
         } elseif ($direct) {
-            $regex = sprintf('^([^%s]+)'.($includeNode ? '?' : '').'%s$',
+            $regex = sprintf(
+                '^([^%s]+)'.($includeNode ? '?' : '').'%s$',
                 $separator,
-                $separator);
+                $separator
+            );
         }
 
         if ($regex) {
             $qb->field($config['path'])->equals(new Regex($regex));
         }
 
-        $qb->sort(null === $sortByField ? $config['path'] : $sortByField, 'asc' === $direction ? 'asc' : 'desc');
+        $qb->sort($sortByField ?? $config['path'], 'asc' === strtolower($direction) ? 'asc' : 'desc');
 
         return $qb;
     }
@@ -144,7 +158,7 @@ class MaterializedPathRepository extends AbstractTreeRepository
 
     public function getChildren($node = null, $direct = false, $sortByField = null, $direction = 'asc', $includeNode = false)
     {
-        return $this->getChildrenQuery($node, $direct, $sortByField, $direction, $includeNode)->execute();
+        return $this->getChildrenQuery($node, $direct, $sortByField, $direction, $includeNode)->getIterator();
     }
 
     public function getNodesHierarchyQueryBuilder($node = null, $direct = false, array $options = [], $includeNode = false)

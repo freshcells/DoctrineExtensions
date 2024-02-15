@@ -11,19 +11,22 @@ declare(strict_types=1);
 
 namespace Gedmo\Tests\Tree\Fixture;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Gedmo\Tree\Entity\Repository\NestedTreeRepository;
+use Gedmo\Tree\Node;
 
 /**
  * @ORM\Entity(repositoryClass="Gedmo\Tree\Entity\Repository\NestedTreeRepository")
+ *
  * @Gedmo\Tree(type="nested")
  */
 #[ORM\Entity(repositoryClass: NestedTreeRepository::class)]
 #[Gedmo\Tree(type: 'nested')]
-class RootCategory
+class RootCategory implements Node
 {
     /**
      * @var Collection<int, self>
@@ -45,17 +48,16 @@ class RootCategory
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="title", type="string", length=64)
      */
     #[ORM\Column(name: 'title', type: Types::STRING, length: 64)]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeLeft
+     *
      * @ORM\Column(name="lft", type="integer")
      */
     #[ORM\Column(name: 'lft', type: Types::INTEGER)]
@@ -66,6 +68,7 @@ class RootCategory
      * @var int|null
      *
      * @Gedmo\TreeRight
+     *
      * @ORM\Column(name="rgt", type="integer")
      */
     #[ORM\Column(name: 'rgt', type: Types::INTEGER)]
@@ -73,23 +76,23 @@ class RootCategory
     private $rgt;
 
     /**
-     * @var self|null
-     *
      * @Gedmo\TreeParent
+     *
      * @ORM\ManyToOne(targetEntity="RootCategory", inversedBy="children")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
+     *     @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
      * })
      */
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
     #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[Gedmo\TreeParent]
-    private $parent;
+    private ?RootCategory $parent = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeRoot
+     *
      * @ORM\Column(type="integer")
      */
     #[ORM\Column(type: Types::INTEGER)]
@@ -99,12 +102,20 @@ class RootCategory
     /**
      * @var int|null
      *
-     * @Gedmo\TreeLevel
+     * @Gedmo\TreeLevel(base=1)
+     *
      * @ORM\Column(name="lvl", type="integer")
      */
     #[ORM\Column(name: 'lvl', type: Types::INTEGER)]
-    #[Gedmo\TreeLevel]
+    #[Gedmo\TreeLevel(base: 1)]
     private $level;
+
+    private ?Node $sibling = null;
+
+    public function __construct()
+    {
+        $this->children = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -121,7 +132,7 @@ class RootCategory
         return $this->title;
     }
 
-    public function setParent(self $parent = null): void
+    public function setParent(?self $parent = null): void
     {
         $this->parent = $parent;
     }
@@ -165,5 +176,15 @@ class RootCategory
     public function setChildren(Collection $children): void
     {
         $this->children = $children;
+    }
+
+    public function setSibling(Node $node): void
+    {
+        $this->sibling = $node;
+    }
+
+    public function getSibling(): ?Node
+    {
+        return $this->sibling;
     }
 }

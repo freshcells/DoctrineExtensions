@@ -18,6 +18,8 @@ use Gedmo\Tree\Strategy\AbstractMaterializedPath;
  *
  * @author Gustavo Falco <comfortablynumb84@gmail.com>
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
+ *
+ * @final since gedmo/doctrine-extensions 3.11
  */
 class MaterializedPath extends AbstractMaterializedPath
 {
@@ -31,22 +33,24 @@ class MaterializedPath extends AbstractMaterializedPath
 
         $path = addcslashes($wrapped->getPropertyValue($config['path']), '%');
 
+        $separator = $config['path_ends_with_separator'] ? null : $config['path_separator'];
+
         // Remove node's children
         $qb = $om->createQueryBuilder();
         $qb->select('e')
             ->from($config['useObjectClass'], 'e')
-            ->where($qb->expr()->like('e.'.$config['path'], $qb->expr()->literal($path.'%')));
+            ->where($qb->expr()->like('e.'.$config['path'], $qb->expr()->literal($path.$separator.'%')));
 
         if (isset($config['level'])) {
             $lvlField = $config['level'];
             $lvl = $wrapped->getPropertyValue($lvlField);
             if (!empty($lvl)) {
-                $qb->andWhere($qb->expr()->gt('e.' . $lvlField, $qb->expr()->literal($lvl)));
+                $qb->andWhere($qb->expr()->gt('e.'.$lvlField, $qb->expr()->literal($lvl)));
             }
         }
 
         $results = $qb->getQuery()
-            ->execute();
+            ->toIterable();
 
         foreach ($results as $node) {
             $uow->scheduleForDelete($node);
@@ -67,7 +71,6 @@ class MaterializedPath extends AbstractMaterializedPath
             ->orderBy('e.'.$config['path'], 'asc');      // This may save some calls to updateNode
         $qb->setParameter('path', $path);
 
-        return $qb->getQuery()
-            ->execute();
+        return $qb->getQuery()->getResult();
     }
 }

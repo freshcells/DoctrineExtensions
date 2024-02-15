@@ -11,31 +11,34 @@ declare(strict_types=1);
 
 namespace Gedmo\Tests\Mapping\Fixture;
 
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 
 /**
  * @ORM\Entity
+ *
  * @Gedmo\SoftDeleteable(fieldName="deletedAt")
  */
+#[ORM\Entity]
+#[Gedmo\SoftDeleteable(fieldName: 'deletedAt')]
 class SoftDeleteable
 {
     /**
+     * @var int|null
+     *
      * @ORM\Id
      * @ORM\GeneratedValue
      * @ORM\Column(type="integer")
      */
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: Types::INTEGER)]
     private $id;
 
-    /**
-     * @var string|null
-     */
-    private $title;
+    private ?string $title = null;
 
-    /**
-     * @var string|null
-     */
-    private $code;
+    private ?string $code = null;
 
     /**
      * @var string|null
@@ -43,11 +46,14 @@ class SoftDeleteable
     private $slug;
 
     /**
+     * @var \DateTime|null
+     *
      * @ORM\Column(name="deleted_at", type="datetime", nullable=true)
      */
+    #[ORM\Column(name: 'deleted_at', type: Types::DATETIME_MUTABLE, nullable: true)]
     private $deletedAt;
 
-    public function getId()
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -62,7 +68,7 @@ class SoftDeleteable
         return $this->title;
     }
 
-    public function setCode($code): void
+    public function setCode(?string $code): void
     {
         $this->code = $code;
     }

@@ -13,35 +13,17 @@ namespace Gedmo\Tests\Mapping\Fixture\Yaml;
 
 class BaseCategory
 {
-    /**
-     * @var int
-     */
-    private $left;
+    private ?int $left = null;
 
-    /**
-     * @var int
-     */
-    private $right;
+    private ?int $right = null;
 
-    /**
-     * @var int
-     */
-    private $level;
+    private ?int $level = null;
 
-    /**
-     * @var int
-     */
-    private $rooted;
+    private ?int $rooted = null;
 
-    /**
-     * @var \DateTime|null
-     */
-    private $created;
+    private ?\DateTime $created = null;
 
-    /**
-     * @var \DateTime|null
-     */
-    private $updated;
+    private ?\DateTime $updated = null;
 
     public function setCreated(\DateTime $created): void
     {
@@ -56,23 +38,17 @@ class BaseCategory
         return $this->created;
     }
 
-    /**
-     * @param \DateTime $updated
-     */
-    public function setUpdated($updated): void
+    public function setUpdated(\DateTime $updated): void
     {
         $this->updated = $updated;
     }
 
-    /**
-     * @return \DateTime $updated
-     */
     public function getUpdated(): ?\DateTime
     {
         return $this->updated;
     }
 
-    public function setLeft($left): self
+    public function setLeft(int $left): self
     {
         $this->left = $left;
 
@@ -84,7 +60,7 @@ class BaseCategory
         return $this->left;
     }
 
-    public function setRight($right): self
+    public function setRight(int $right): self
     {
         $this->right = $right;
 
@@ -96,7 +72,7 @@ class BaseCategory
         return $this->right;
     }
 
-    public function setLevel($level): self
+    public function setLevel(int $level): self
     {
         $this->level = $level;
 
@@ -108,7 +84,7 @@ class BaseCategory
         return $this->level;
     }
 
-    public function setRooted($rooted): self
+    public function setRooted(int $rooted): self
     {
         $this->rooted = $rooted;
 

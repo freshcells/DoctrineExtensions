@@ -1,4 +1,4 @@
-# Loggable behavioral extension for Doctrine2
+# Loggable behavioral extension for Doctrine
 
 **Loggable** behavior tracks your record changes and is able to
 manage versions.
@@ -32,14 +32,16 @@ on how to setup and use the extensions in most optimized way.
 
 ### Loggable annotations:
 
-- **@Gedmo\Mapping\Annotation\Loggable(logEntryClass="my\class")** this class annotation
-will store logs to optionally specified **logEntryClass**. You will still need to specify versioned fields with the following annotation.
+- **@Gedmo\Mapping\Annotation\Loggable(logEntryClass="My\LoggableModel")** this class annotation will store logs to optionally
+  specified **logEntryClass**. The class provided in this annotation MUST implement ``Gedmo\Loggable\LogEntryInterface``. You will
+  still need to specify versioned fields with the following annotation.
 - **@Gedmo\Mapping\Annotation\Versioned** tracks annotated property for changes
 
-### Loggable annotations:
+### Loggable attributes:
 
-- **\#[Gedmo\Mapping\Annotation\Loggable(logEntryClass: MyClass::class]** this class attribute
-will store logs to optionally specified **logEntryClass**. You will still need to specify versioned fields with the following attribute.
+- **\#[Gedmo\Mapping\Annotation\Loggable(logEntryClass: My\LoggableModel::class]** this class attribute will store logs to optionally
+  specified **logEntryClass**. The class provided in this attribute MUST implement ``Gedmo\Loggable\LogEntryInterface``. You will
+  still need to specify versioned fields with the following attribute.
 - **\#[Gedmo\Mapping\Annotation\Versioned]** tracks attributed property for changes
 
 ### Loggable username:
@@ -47,17 +49,22 @@ will store logs to optionally specified **logEntryClass**. You will still need t
 In order to set the username, when adding the loggable listener you need to set it this way:
 
 ```php
-$loggableListener = new Gedmo\Loggable\LoggableListener;
+<?php
+
+use Gedmo\Loggable\LoggableListener;
+
+$loggableListener = new LoggableListener();
 $loggableListener->setAnnotationReader($cachedAnnotationReader);
 $loggableListener->setUsername('admin');
 $evm->addEventSubscriber($loggableListener);
 ```
+
 <a name="entity-mapping"></a>
 
 ## Loggable Entity example:
 
-**Note:** that Loggable interface is not necessary, except in cases there
-you need to identify entity as being Loggable. The metadata is loaded only once when
+**Note:** that Loggable interface is not necessary, except in cases where
+you need to identify an entity as being Loggable. The metadata is loaded only once when
 cache is active
 
 **Note:** this example is using annotations and attributes for mapping, you should use
@@ -65,11 +72,13 @@ one of them, not both.
 
 ```php
 <?php
+
 namespace Entity;
 
-use Gedmo\Mapping\Annotation as Gedmo;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Loggable\Loggable;
+use Gedmo\Mapping\Annotation as Gedmo;
 
 /**
  * @ORM\Entity
@@ -77,7 +86,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity]
 #[Gedmo\Loggable]
-class Article
+class Article implements Loggable
 {
     /**
      * @ORM\Column(name="id", type="integer")
@@ -120,11 +129,13 @@ class Article
 
 ```php
 <?php
+
 namespace Document;
 
-use Gedmo\Mapping\Annotation as Gedmo;
 use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 use Doctrine\ODM\MongoDB\Types\Type;
+use Gedmo\Loggable\Loggable;
+use Gedmo\Mapping\Annotation as Gedmo;
 
 /**
  * @ODM\Document(collection="articles")
@@ -132,7 +143,7 @@ use Doctrine\ODM\MongoDB\Types\Type;
  */
 #[Gedmo\Loggable]
 #[ODM\Document(collection: 'articles')]
-class Article
+class Article implements Loggable
 {
     /** @ODM\Id */
     #[ODM\Id]
@@ -197,13 +208,54 @@ class Article
 </doctrine-mapping>
 ```
 
+<a name="custom-logentry-class"></a>
+
+## Custom LogEntry class
+
+```php
+<?php
+
+namespace Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Loggable\Entity\MappedSuperclass\AbstractLogEntry;
+
+/**
+ * @ORM\Table(
+ *     options={"row_format":"DYNAMIC"},
+ *     indexes={
+ *         @ORM\Index(name="log_class_lookup_idx", columns={"object_class"}),
+ *         @ORM\Index(name="log_date_lookup_idx", columns={"logged_at"}),
+ *         @ORM\Index(name="log_user_lookup_idx", columns={"username"}),
+ *         @ORM\Index(name="log_version_lookup_idx", columns={"object_id", "object_class", "version"})
+ *     }
+ * )
+ * @ORM\Entity()
+ */
+#[ORM\Entity]
+#[ORM\Table(options: ['row_format' => 'DYNAMIC'])]
+#[ORM\Index(name: 'log_class_lookup_idx', columns: ['object_class'])]
+#[ORM\Index(name: 'log_date_lookup_idx', columns: ['logged_at'])]
+#[ORM\Index(name: 'log_user_lookup_idx', columns: ['username'])]
+#[ORM\Index(name: 'log_version_lookup_idx', columns: ['object_id', 'object_class', 'version'])]
+class ParameterHistory extends AbstractLogEntry
+{
+    /*
+     * All required columns are mapped through inherited superclass
+     */
+}
+```
+
 <a name="basic-examples"></a>
 
 ## Basic usage examples:
 
 ```php
 <?php
-$article = new Entity\Article;
+
+use Entity\Article;
+
+$article = new Article();
 $article->setTitle('my title');
 $em->persist($article);
 $em->flush();
@@ -217,8 +269,11 @@ Now lets update our article:
 
 ```php
 <?php
+
+use Entity\Article;
+
 // first load the article
-$article = $em->find('Entity\Article', 1 /*article id*/);
+$article = $em->find(Article::class, 1 /*article id*/);
 $article->setTitle('my new title');
 $em->persist($article);
 $em->flush();
@@ -229,9 +284,13 @@ Now lets revert it to previous version:
 
 ```php
 <?php
+
+use Entity\Article;
+use Gedmo\Loggable\Entity\LogEntry;
+
 // first check our log entries
-$repo = $em->getRepository('Gedmo\Loggable\Entity\LogEntry'); // we use default log entry class
-$article = $em->find('Entity\Article', 1 /*article id*/);
+$repo = $em->getRepository(LogEntry::class); // we use default log entry class
+$article = $em->find(Article::class, 1 /*article id*/);
 $logs = $repo->getLogEntries($article);
 /* $logs contains 2 logEntries */
 // lets revert to first version

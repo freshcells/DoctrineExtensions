@@ -21,7 +21,9 @@ use Gedmo\Tree\Node as NodeInterface;
 
 /**
  * @ORM\Entity(repositoryClass="Gedmo\Tree\Entity\Repository\NestedTreeRepository")
+ *
  * @Gedmo\Tree(type="nested")
+ *
  * @ORM\HasLifecycleCallbacks
  */
 #[ORM\Entity(repositoryClass: NestedTreeRepository::class)]
@@ -30,8 +32,6 @@ use Gedmo\Tree\Node as NodeInterface;
 class CategoryUuid implements NodeInterface
 {
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="id", type="string", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="NONE")
@@ -39,20 +39,19 @@ class CategoryUuid implements NodeInterface
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'NONE')]
     #[ORM\Column(name: 'id', type: Types::STRING, nullable: false)]
-    private $id;
+    private ?string $id = null;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="title", type="string", length=64)
      */
     #[ORM\Column(name: 'title', type: Types::STRING, length: 64)]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeLeft
+     *
      * @ORM\Column(name="lft", type="integer")
      */
     #[ORM\Column(name: 'lft', type: Types::INTEGER)]
@@ -63,6 +62,7 @@ class CategoryUuid implements NodeInterface
      * @var int|null
      *
      * @Gedmo\TreeRight
+     *
      * @ORM\Column(name="rgt", type="integer")
      */
     #[ORM\Column(name: 'rgt', type: Types::INTEGER)]
@@ -70,23 +70,23 @@ class CategoryUuid implements NodeInterface
     private $rgt;
 
     /**
-     * @var self|null
-     *
      * @Gedmo\TreeParent
+     *
      * @ORM\ManyToOne(targetEntity="CategoryUuid", inversedBy="children")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
+     *     @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
      * })
      */
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
     #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[Gedmo\TreeParent]
-    private $parentId;
+    private ?CategoryUuid $parentId = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeLevel
+     *
      * @ORM\Column(name="lvl", type="integer")
      */
     #[ORM\Column(name: 'lvl', type: Types::INTEGER)]
@@ -97,6 +97,7 @@ class CategoryUuid implements NodeInterface
      * @var string|null
      *
      * @Gedmo\TreeRoot
+     *
      * @ORM\Column(name="root", type="string")
      */
     #[ORM\Column(name: 'root', type: Types::STRING)]
@@ -109,7 +110,7 @@ class CategoryUuid implements NodeInterface
      * @ORM\OneToMany(targetEntity="CategoryUuid", mappedBy="parent")
      */
     #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parent')]
-    private $children;
+    private Collection $children;
 
     /**
      * @var Collection<int, Article>
@@ -117,7 +118,9 @@ class CategoryUuid implements NodeInterface
      * @ORM\OneToMany(targetEntity="Article", mappedBy="category")
      */
     #[ORM\OneToMany(targetEntity: Article::class, mappedBy: 'category')]
-    private $comments;
+    private Collection $comments;
+
+    private ?NodeInterface $sibling = null;
 
     public function __construct()
     {
@@ -133,7 +136,7 @@ class CategoryUuid implements NodeInterface
     #[ORM\PrePersist]
     public function createId(): void
     {
-        $this->id = bin2hex(pack('N2', mt_rand(), mt_rand()));
+        $this->id = bin2hex(pack('N2', random_int(0, mt_getrandmax()), random_int(0, mt_getrandmax())));
     }
 
     public function getId(): ?string
@@ -174,5 +177,15 @@ class CategoryUuid implements NodeInterface
     public function getLevel(): ?int
     {
         return $this->level;
+    }
+
+    public function setSibling(NodeInterface $node): void
+    {
+        $this->sibling = $node;
+    }
+
+    public function getSibling(): ?NodeInterface
+    {
+        return $this->sibling;
     }
 }

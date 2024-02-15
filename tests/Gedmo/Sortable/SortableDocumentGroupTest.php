@@ -25,11 +25,11 @@ use Gedmo\Tests\Tool\BaseTestCaseMongoODM;
  */
 final class SortableDocumentGroupTest extends BaseTestCaseMongoODM
 {
-    public const POST = Post::class;
-    public const CATEGORY = Category::class;
-    public const KID = Kid::class;
-    public const KID_DATE1 = '1999-12-31';
-    public const KID_DATE2 = '2000-01-01';
+    private const POST = Post::class;
+    private const CATEGORY = Category::class;
+    private const KID = Kid::class;
+    private const KID_DATE1 = '1999-12-31';
+    private const KID_DATE2 = '2000-01-01';
 
     protected function setUp(): void
     {
@@ -168,7 +168,7 @@ final class SortableDocumentGroupTest extends BaseTestCaseMongoODM
         for ($i = 0; $i < 6; ++$i) {
             $post = new Post();
             $post->setTitle('post'.$i);
-            $post->setCategory($categories[($i % 2)]);
+            $post->setCategory($categories[$i % 2]);
             $this->dm->persist($post);
         }
 
@@ -180,7 +180,7 @@ final class SortableDocumentGroupTest extends BaseTestCaseMongoODM
         for ($i = 0; $i < 4; ++$i) {
             $kid = new Kid();
             $kid->setLastname('kid'.$i);
-            $kid->setBirthdate($birthdates[($i % 2)]);
+            $kid->setBirthdate($birthdates[$i % 2]);
             $this->dm->persist($kid);
         }
         $this->dm->flush();

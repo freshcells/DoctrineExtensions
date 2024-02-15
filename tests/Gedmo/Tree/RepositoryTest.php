@@ -24,8 +24,8 @@ use Gedmo\Tree\TreeListener;
  */
 final class RepositoryTest extends BaseTestCaseORM
 {
-    public const CATEGORY = Category::class;
-    public const CATEGORY_UUID = CategoryUuid::class;
+    private const CATEGORY = Category::class;
+    private const CATEGORY_UUID = CategoryUuid::class;
 
     protected function setUp(): void
     {
@@ -93,6 +93,52 @@ final class RepositoryTest extends BaseTestCaseORM
             ->children();
 
         static::assertCount(6, $children);
+
+        // test children sorting
+
+        $children = $this->em->getRepository(self::CATEGORY)
+             ->children($food, true, ['title'], 'ASC');
+
+        static::assertCount(2, $children);
+        static::assertSame('Fruits', $children[0]->getTitle());
+        static::assertSame('Vegitables', $children[1]->getTitle());
+
+        $children = $this->em->getRepository(self::CATEGORY)
+             ->children($food, false, ['level', 'title'], ['ASC', 'DESC']);
+
+        static::assertCount(4, $children);
+        static::assertSame('Vegitables', $children[0]->getTitle());
+        static::assertSame('Fruits', $children[1]->getTitle());
+        static::assertSame('Potatoes', $children[2]->getTitle());
+        static::assertSame('Carrots', $children[3]->getTitle());
+
+        $children = $this->em->getRepository(self::CATEGORY)
+             ->children($food, false, ['level', 'title'], ['ASC']);
+
+        static::assertCount(4, $children);
+        static::assertSame('Fruits', $children[0]->getTitle());
+        static::assertSame('Vegitables', $children[1]->getTitle());
+        static::assertSame('Carrots', $children[2]->getTitle());
+        static::assertSame('Potatoes', $children[3]->getTitle());
+
+        // test sorting by single-valued association field
+        $children = $this->em->getRepository(self::CATEGORY)
+            ->children($food, false, 'parentId');
+
+        static::assertCount(4, $children);
+        static::assertSame('Fruits', $children[0]->getTitle());
+        static::assertSame('Vegitables', $children[1]->getTitle());
+        static::assertSame('Carrots', $children[2]->getTitle());
+        static::assertSame('Potatoes', $children[3]->getTitle());
+
+        $children = $this->em->getRepository(self::CATEGORY)
+            ->children($food, false, ['parentId'], ['ASC']);
+
+        static::assertCount(4, $children);
+        static::assertSame('Fruits', $children[0]->getTitle());
+        static::assertSame('Vegitables', $children[1]->getTitle());
+        static::assertSame('Carrots', $children[2]->getTitle());
+        static::assertSame('Potatoes', $children[3]->getTitle());
 
         // path
 
@@ -273,7 +319,6 @@ final class RepositoryTest extends BaseTestCaseORM
     public function testVerificationAndRecover(): void
     {
         $repo = $this->em->getRepository(self::CATEGORY);
-        $meta = $this->em->getClassMetadata(self::CATEGORY);
         $this->populateMore();
         // test verification of tree
 
@@ -282,7 +327,7 @@ final class RepositoryTest extends BaseTestCaseORM
         // now lets brake something
 
         $dql = 'UPDATE '.self::CATEGORY.' node';
-        $dql .= ' SET node.lft = 1';
+        $dql .= ' SET node.lft = 1, node.level = 99';
         $dql .= ' WHERE node.id = 8';
         $q = $this->em->createQuery($dql);
         $q->getSingleScalarResult();
@@ -297,14 +342,17 @@ final class RepositoryTest extends BaseTestCaseORM
         static::assertArrayHasKey(0, $result);
         static::assertArrayHasKey(1, $result);
         static::assertArrayHasKey(2, $result);
+        static::assertArrayHasKey(3, $result);
 
         $duplicate = $result[0];
         $missing = $result[1];
         $invalidLeft = $result[2];
+        $invalidLevel = $result[3];
 
         static::assertSame('index [1], duplicate', $duplicate);
         static::assertSame('index [11], missing', $missing);
         static::assertSame('node [8] left is less than parent`s [4] left value', $invalidLeft);
+        static::assertSame('node [8] should be on the level right after its parent`s [4] level', $invalidLevel);
 
         // test recover functionality
         $repo->recover();

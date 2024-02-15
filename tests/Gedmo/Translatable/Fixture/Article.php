@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace Gedmo\Tests\Translatable\Fixture;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
@@ -36,49 +38,62 @@ class Article implements Translatable
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(name="title", type="string", length=128)
      */
     #[Gedmo\Translatable]
     #[ORM\Column(name: 'title', type: Types::STRING, length: 128)]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(name="content", type="text", nullable=true)
      */
     #[Gedmo\Translatable]
     #[ORM\Column(name: 'content', type: Types::TEXT, nullable: true)]
-    private $content;
+    private ?string $content = null;
 
     /**
      * @Gedmo\Translatable(fallback=false)
+     *
      * @ORM\Column(name="views", type="integer", nullable=true)
      */
     #[Gedmo\Translatable(fallback: false)]
     #[ORM\Column(name: 'views', type: Types::INTEGER, nullable: true)]
-    private $views;
+    private ?int $views = null;
 
     /**
      * @Gedmo\Translatable(fallback=true)
+     *
      * @ORM\Column(name="author", type="string", nullable=true)
      */
     #[Gedmo\Translatable(fallback: true)]
     #[ORM\Column(name: 'author', type: Types::STRING, nullable: true)]
-    private $author;
+    private ?string $author = null;
 
     /**
+     * @var string|null
+     *
      * Used locale to override Translation listener`s locale
      *
      * @Gedmo\Locale
      */
     #[Gedmo\Locale]
-    private $locale;
+    private ?string $locale = null;
 
     /**
+     * @var Collection<int, Comment>
+     *
      * @ORM\OneToMany(targetEntity="Comment", mappedBy="article")
      */
     #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'article')]
     private $comments;
+
+    public function __construct()
+    {
+        $this->comments = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -91,7 +106,10 @@ class Article implements Translatable
         $this->comments[] = $comment;
     }
 
-    public function getComments()
+    /**
+     * @return Collection<int, Comment>
+     */
+    public function getComments(): Collection
     {
         return $this->comments;
     }
@@ -101,42 +119,42 @@ class Article implements Translatable
         $this->title = $title;
     }
 
-    public function getTitle()
+    public function getTitle(): ?string
     {
         return $this->title;
     }
 
-    public function setContent($content): void
+    public function setContent(?string $content): void
     {
         $this->content = $content;
     }
 
-    public function getContent()
+    public function getContent(): ?string
     {
         return $this->content;
     }
 
-    public function setTranslatableLocale($locale): void
+    public function setTranslatableLocale(?string $locale): void
     {
         $this->locale = $locale;
     }
 
-    public function setViews($views): void
+    public function setViews(?int $views): void
     {
         $this->views = $views;
     }
 
-    public function getViews()
+    public function getViews(): ?int
     {
         return $this->views;
     }
 
-    public function setAuthor($author): void
+    public function setAuthor(?string $author): void
     {
         $this->author = $author;
     }
 
-    public function getAuthor()
+    public function getAuthor(): ?string
     {
         return $this->author;
     }

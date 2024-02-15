@@ -29,15 +29,12 @@ use Gedmo\Tree\TreeListener;
  */
 final class TranslatableSluggableTreeTest extends BaseTestCaseORM
 {
-    public const CATEGORY = BehavioralCategory::class;
-    public const ARTICLE = Article::class;
-    public const COMMENT = Comment::class;
-    public const TRANSLATION = Translation::class;
+    private const CATEGORY = BehavioralCategory::class;
+    private const ARTICLE = Article::class;
+    private const COMMENT = Comment::class;
+    private const TRANSLATION = Translation::class;
 
-    /**
-     * @var TranslatableListener
-     */
-    private $translatableListener;
+    private TranslatableListener $translatableListener;
 
     protected function setUp(): void
     {

@@ -27,30 +27,33 @@ class StringIdentifier
      */
     #[ORM\Id]
     #[ORM\Column(name: 'uid', type: Types::STRING, length: 32)]
-    private $uid;
+    private ?string $uid = null;
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(name="title", type="string", length=128)
      */
     #[Gedmo\Translatable]
     #[ORM\Column(name: 'title', type: Types::STRING, length: 128)]
-    private $title;
+    private ?string $title = null;
 
     /**
+     * @var string|null
+     *
      * Used locale to override Translation listener`s locale
      *
      * @Gedmo\Locale
      */
     #[Gedmo\Locale]
-    private $locale;
+    private ?string $locale = null;
 
-    public function getUid()
+    public function getUid(): ?string
     {
         return $this->uid;
     }
 
-    public function setUid($uid): void
+    public function setUid(?string $uid): void
     {
         $this->uid = $uid;
     }
@@ -60,12 +63,12 @@ class StringIdentifier
         $this->title = $title;
     }
 
-    public function getTitle()
+    public function getTitle(): ?string
     {
         return $this->title;
     }
 
-    public function setTranslatableLocale($locale): void
+    public function setTranslatableLocale(?string $locale): void
     {
         $this->locale = $locale;
     }

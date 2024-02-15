@@ -15,11 +15,19 @@ use Doctrine\ODM\MongoDB\Query\Builder;
 use Doctrine\ODM\MongoDB\Query\Query;
 use Doctrine\ODM\MongoDB\Repository\DocumentRepository;
 use Doctrine\ODM\MongoDB\UnitOfWork;
+use Gedmo\Exception\InvalidMappingException;
 use Gedmo\Tree\RepositoryInterface;
 use Gedmo\Tree\RepositoryUtils;
 use Gedmo\Tree\RepositoryUtilsInterface;
 use Gedmo\Tree\TreeListener;
 
+/**
+ * @template T of object
+ *
+ * @phpstan-extends DocumentRepository<T>
+ *
+ * @phpstan-implements RepositoryInterface<T>
+ */
 abstract class AbstractTreeRepository extends DocumentRepository implements RepositoryInterface
 {
     /**
@@ -32,17 +40,18 @@ abstract class AbstractTreeRepository extends DocumentRepository implements Repo
     /**
      * Repository utils
      *
-     * @var RepositoryUtils
+     * @var RepositoryUtilsInterface
      */
     protected $repoUtils;
 
+    /** @param ClassMetadata<T> $class */
     public function __construct(DocumentManager $em, UnitOfWork $uow, ClassMetadata $class)
     {
         parent::__construct($em, $uow, $class);
         $treeListener = null;
-        foreach ($em->getEventManager()->getListeners() as $listeners) {
+        foreach ($em->getEventManager()->getAllListeners() as $listeners) {
             foreach ($listeners as $listener) {
-                if ($listener instanceof \Gedmo\Tree\TreeListener) {
+                if ($listener instanceof TreeListener) {
                     $treeListener = $listener;
 
                     break 2;
@@ -51,12 +60,12 @@ abstract class AbstractTreeRepository extends DocumentRepository implements Repo
         }
 
         if (null === $treeListener) {
-            throw new \Gedmo\Exception\InvalidMappingException('This repository can be attached only to ODM MongoDB tree listener');
+            throw new InvalidMappingException('This repository can be attached only to ODM MongoDB tree listener');
         }
 
         $this->listener = $treeListener;
         if (!$this->validate()) {
-            throw new \Gedmo\Exception\InvalidMappingException('This repository cannot be used for tree type: '.$treeListener->getStrategy($em, $class->getName())->getName());
+            throw new InvalidMappingException('This repository cannot be used for tree type: '.$treeListener->getStrategy($em, $class->getName())->getName());
         }
 
         $this->repoUtils = new RepositoryUtils($this->dm, $this->getClassMetadata(), $this->listener, $this);
@@ -77,7 +86,7 @@ abstract class AbstractTreeRepository extends DocumentRepository implements Repo
     /**
      * Returns the RepositoryUtilsInterface instance
      *
-     * @return \Gedmo\Tree\RepositoryUtilsInterface|null
+     * @return RepositoryUtilsInterface|null
      */
     public function getRepoUtils()
     {
@@ -138,10 +147,10 @@ abstract class AbstractTreeRepository extends DocumentRepository implements Repo
     /**
      * Returns a QueryBuilder configured to return an array of nodes suitable for buildTree method
      *
-     * @param object $node        Root node
-     * @param bool   $direct      Obtain direct children?
-     * @param array  $options     Options
-     * @param bool   $includeNode Include node in results?
+     * @param object               $node        Root node
+     * @param bool                 $direct      Obtain direct children?
+     * @param array<string, mixed> $options     Options
+     * @param bool                 $includeNode Include node in results?
      *
      * @return Builder
      */
@@ -150,10 +159,10 @@ abstract class AbstractTreeRepository extends DocumentRepository implements Repo
     /**
      * Returns a Query configured to return an array of nodes suitable for buildTree method
      *
-     * @param object $node        Root node
-     * @param bool   $direct      Obtain direct children?
-     * @param array  $options     Options
-     * @param bool   $includeNode Include node in results?
+     * @param object               $node        Root node
+     * @param bool                 $direct      Obtain direct children?
+     * @param array<string, mixed> $options     Options
+     * @param bool                 $includeNode Include node in results?
      *
      * @return Query
      */

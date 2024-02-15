@@ -19,9 +19,9 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\InheritanceType("SINGLE_TABLE")
  * @ORM\DiscriminatorColumn(name="discriminator", type="string")
  * @ORM\DiscriminatorMap({
- *      "vehicle" = "Vehicle",
- *      "car" = "Car",
- *      "bus" = "Bus"
+ *     "vehicle": "Vehicle",
+ *     "car": "Car",
+ *     "bus": "Bus"
  * })
  */
 #[ORM\Entity]
@@ -43,20 +43,16 @@ class Vehicle
     private $id;
 
     /**
-     * @var Engine|null
-     *
      * @ORM\OneToOne(targetEntity="Engine")
      */
     #[ORM\OneToOne(targetEntity: Engine::class)]
-    private $engine;
+    private ?Engine $engine = null;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(length=128)
      */
     #[ORM\Column(type: Types::STRING)]
-    private $title;
+    private ?string $title = null;
 
     public function getId(): ?int
     {

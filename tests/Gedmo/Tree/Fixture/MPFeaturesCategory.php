@@ -20,6 +20,7 @@ use Gedmo\Tree\Entity\Repository\MaterializedPathRepository;
 
 /**
  * @ORM\Entity(repositoryClass="Gedmo\Tree\Entity\Repository\MaterializedPathRepository")
+ *
  * @Gedmo\Tree(type="materializedPath")
  */
 #[ORM\Entity(repositoryClass: MaterializedPathRepository::class)]
@@ -39,19 +40,19 @@ class MPFeaturesCategory
     private $id;
 
     /**
-     * @var string|null
-     *
      * @Gedmo\TreePath(appendId=false, startsWithSeparator=true, endsWithSeparator=false)
+     *
      * @ORM\Column(name="path", type="string", length=3000, nullable=true)
      */
     #[ORM\Column(name: 'path', type: Types::STRING, length: 3000, nullable: true)]
     #[Gedmo\TreePath(appendId: false, startsWithSeparator: true, endsWithSeparator: false)]
-    private $path;
+    private ?string $path = null;
 
     /**
      * @var string|null
      *
      * @Gedmo\TreePathHash
+     *
      * @ORM\Column(name="pathhash", type="string", length=32, nullable=true)
      */
     #[ORM\Column(name: 'pathhash', type: Types::STRING, length: 32, nullable: true)]
@@ -59,33 +60,32 @@ class MPFeaturesCategory
     private $pathHash;
 
     /**
-     * @var string|null
-     *
      * @Gedmo\TreePathSource
+     *
      * @ORM\Column(name="title", type="string", length=64)
      */
     #[ORM\Column(name: 'title', type: Types::STRING, length: 64)]
     #[Gedmo\TreePathSource]
-    private $title;
+    private ?string $title = null;
 
     /**
-     * @var self|null
-     *
      * @Gedmo\TreeParent
+     *
      * @ORM\ManyToOne(targetEntity="MPFeaturesCategory", inversedBy="children")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
+     *     @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
      * })
      */
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
     #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[Gedmo\TreeParent]
-    private $parentId;
+    private ?MPFeaturesCategory $parentId = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeLevel
+     *
      * @ORM\Column(name="lvl", type="integer", nullable=true)
      */
     #[ORM\Column(name: 'lvl', type: Types::INTEGER, nullable: true)]
@@ -96,6 +96,7 @@ class MPFeaturesCategory
      * @var string|null
      *
      * @Gedmo\TreeRoot
+     *
      * @ORM\Column(name="tree_root_value", type="string", nullable=true)
      */
     #[ORM\Column(name: 'tree_root_value', type: Types::STRING, nullable: true)]
@@ -108,7 +109,7 @@ class MPFeaturesCategory
      * @ORM\OneToMany(targetEntity="MPFeaturesCategory", mappedBy="parent")
      */
     #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parent')]
-    private $children;
+    private Collection $children;
 
     /**
      * @var Collection<int, Article>
@@ -116,7 +117,7 @@ class MPFeaturesCategory
      * @ORM\OneToMany(targetEntity="Article", mappedBy="category")
      */
     #[ORM\OneToMany(targetEntity: Article::class, mappedBy: 'category')]
-    private $comments;
+    private Collection $comments;
 
     public function __construct()
     {
@@ -139,7 +140,7 @@ class MPFeaturesCategory
         return $this->title;
     }
 
-    public function setParent(self $parent = null): void
+    public function setParent(?self $parent = null): void
     {
         $this->parentId = $parent;
     }

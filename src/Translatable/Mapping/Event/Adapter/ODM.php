@@ -9,11 +9,12 @@
 
 namespace Gedmo\Translatable\Mapping\Event\Adapter;
 
-use Doctrine\ODM\MongoDB\Iterator\Iterator;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Types\Type;
+use Gedmo\Exception\RuntimeException;
 use Gedmo\Mapping\Event\Adapter\ODM as BaseAdapterODM;
 use Gedmo\Tool\Wrapper\AbstractWrapper;
+use Gedmo\Tool\Wrapper\MongoDocumentWrapper;
 use Gedmo\Translatable\Document\MappedSuperclass\AbstractPersonalTranslation;
 use Gedmo\Translatable\Document\Translation;
 use Gedmo\Translatable\Mapping\Event\TranslatableAdapter;
@@ -45,6 +46,7 @@ final class ODM extends BaseAdapterODM implements TranslatableAdapter
     {
         $dm = $this->getObjectManager();
         $wrapped = AbstractWrapper::wrap($object, $dm);
+        assert($wrapped instanceof MongoDocumentWrapper);
         $result = [];
 
         if ($this->usesPersonalTranslation($translationClass)) {
@@ -87,12 +89,8 @@ final class ODM extends BaseAdapterODM implements TranslatableAdapter
             ;
         }
         $q->setHydrate(false);
-        $result = $q->execute();
-        if ($result instanceof Iterator) {
-            $result = $result->toArray();
-        }
 
-        return $result;
+        return $q->getIterator()->toArray();
     }
 
     public function findTranslation(AbstractWrapper $wrapped, $locale, $field, $translationClass, $objectClass)
@@ -142,14 +140,14 @@ final class ODM extends BaseAdapterODM implements TranslatableAdapter
 
         foreach ($meta->getReflectionProperties() as $fieldName => $reflProp) {
             if (!$meta->isIdentifier($fieldName)) {
-                $data[$meta->fieldMappings[$fieldName]['name']] = $reflProp->getValue($translation);
+                $data[$meta->getFieldMapping($fieldName)['name']] = $reflProp->getValue($translation);
             }
         }
 
         $insertResult = $collection->insertOne($data);
 
         if (false === $insertResult->isAcknowledged()) {
-            throw new \Gedmo\Exception\RuntimeException('Failed to insert new Translation record');
+            throw new RuntimeException('Failed to insert new Translation record');
         }
     }
 
@@ -157,6 +155,7 @@ final class ODM extends BaseAdapterODM implements TranslatableAdapter
     {
         $dm = $this->getObjectManager();
         $wrapped = AbstractWrapper::wrap($object, $dm);
+        assert($wrapped instanceof MongoDocumentWrapper);
         $meta = $wrapped->getMetadata();
         $mapping = $meta->getFieldMapping($field);
         $type = $this->getType($mapping['type']);
@@ -171,6 +170,7 @@ final class ODM extends BaseAdapterODM implements TranslatableAdapter
     {
         $dm = $this->getObjectManager();
         $wrapped = AbstractWrapper::wrap($object, $dm);
+        assert($wrapped instanceof MongoDocumentWrapper);
         $meta = $wrapped->getMetadata();
         $mapping = $meta->getFieldMapping($field);
         $type = $this->getType($mapping['type']);

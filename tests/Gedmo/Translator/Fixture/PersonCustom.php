@@ -15,6 +15,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Translator\TranslationInterface;
 
 /**
  * @ORM\Entity
@@ -35,28 +36,24 @@ class PersonCustom
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="name", type="string", length=128)
      */
     #[ORM\Column(name: 'name', type: Types::STRING, length: 128)]
-    private $name;
+    private ?string $name = null;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="desc", type="string", length=128)
      */
     #[ORM\Column(name: 'desc', type: Types::STRING, length: 128)]
-    private $description;
+    private ?string $description = null;
 
     /**
-     * @var Collection<int, PersonCustomTranslation>
+     * @var Collection<int, TranslationInterface>
      *
      * @ORM\OneToMany(targetEntity="PersonCustomTranslation", mappedBy="translatable", cascade={"persist"})
      */
     #[ORM\OneToMany(targetEntity: PersonCustomTranslation::class, mappedBy: 'translatable', cascade: ['persist'])]
-    private $translations;
+    private Collection $translations;
 
     public function __construct()
     {
@@ -88,17 +85,21 @@ class PersonCustom
         return $this->description;
     }
 
-    public function translate(string $locale = null)
+    /**
+     * @return self|CustomProxy
+     */
+    public function translate(?string $locale = null)
     {
         if (null === $locale) {
             return $this;
         }
 
-        return new CustomProxy($this,
-        /* Locale                            */ $locale,
-        /* List of translatable properties:  */ ['name'],
-        /* Translation entity class:         */ PersonCustomTranslation::class,
-        /* Translations collection property: */ $this->translations
+        return new CustomProxy(
+            $this,
+            $locale, // Locale
+            ['name'], // List of translatable properties
+            PersonCustomTranslation::class, // Translation entity class
+            $this->translations // Translations collection property
         );
     }
 }

@@ -9,8 +9,11 @@
 
 namespace Gedmo\Tool\Wrapper;
 
+use Doctrine\Deprecations\Deprecation;
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Doctrine\ODM\MongoDB\Mapping\ClassMetadata as OdmClassMetadata;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Mapping\ClassMetadata as OrmClassMetadata;
 use Doctrine\Persistence\Mapping\ClassMetadata;
 use Doctrine\Persistence\ObjectManager;
 use Gedmo\Exception\UnsupportedObjectManagerException;
@@ -20,6 +23,10 @@ use Gedmo\Tool\WrapperInterface;
  * Wraps entity or proxy for more convenient
  * manipulation
  *
+ * @phpstan-template TClassMetadata of ClassMetadata
+ *
+ * @phpstan-implements WrapperInterface<TClassMetadata>
+ *
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
  */
 abstract class AbstractWrapper implements WrapperInterface
@@ -27,7 +34,9 @@ abstract class AbstractWrapper implements WrapperInterface
     /**
      * Object metadata
      *
-     * @var ClassMetadata
+     * @var ClassMetadata&(OrmClassMetadata|OdmClassMetadata)
+     *
+     * @phpstan-var TClassMetadata
      */
     protected $meta;
 
@@ -50,9 +59,9 @@ abstract class AbstractWrapper implements WrapperInterface
      *
      * @param object $object
      *
-     * @throws \Gedmo\Exception\UnsupportedObjectManagerException
+     * @throws UnsupportedObjectManagerException
      *
-     * @return \Gedmo\Tool\WrapperInterface
+     * @return WrapperInterface<ClassMetadata>
      */
     public static function wrap($object, ObjectManager $om)
     {
@@ -71,10 +80,12 @@ abstract class AbstractWrapper implements WrapperInterface
      */
     public static function clear()
     {
-        @trigger_error(sprintf(
+        Deprecation::trigger(
+            'gedmo/doctrine-extensions',
+            'https://github.com/doctrine-extensions/DoctrineExtensions/pull/2410',
             'Using "%s()" method is deprecated since gedmo/doctrine-extensions 3.5 and will be removed in version 4.0.',
             __METHOD__
-        ), E_USER_DEPRECATED);
+        );
     }
 
     public function getObject()
@@ -89,10 +100,12 @@ abstract class AbstractWrapper implements WrapperInterface
 
     public function populate(array $data)
     {
-        @trigger_error(sprintf(
+        Deprecation::trigger(
+            'gedmo/doctrine-extensions',
+            'https://github.com/doctrine-extensions/DoctrineExtensions/pull/2410',
             'Using "%s()" method is deprecated since gedmo/doctrine-extensions 3.5 and will be removed in version 4.0.',
             __METHOD__
-        ), E_USER_DEPRECATED);
+        );
 
         foreach ($data as $field => $value) {
             $this->setPropertyValue($field, $value);

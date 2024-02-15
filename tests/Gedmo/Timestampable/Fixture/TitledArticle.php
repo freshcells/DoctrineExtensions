@@ -23,8 +23,6 @@ use Gedmo\Timestampable\Timestampable;
 class TitledArticle implements Timestampable
 {
     /**
-     * @var int|null
-     *
      * @ORM\Id
      * @ORM\GeneratedValue
      * @ORM\Column(type="integer")
@@ -32,62 +30,54 @@ class TitledArticle implements Timestampable
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER)]
-    private $id;
+    private ?int $id = null;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="title", type="string", length=128)
      */
     #[ORM\Column(name: 'title', type: Types::STRING, length: 128)]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @ORM\Column(name="text", type="string", length=128)
      */
     #[ORM\Column(name: 'text', type: Types::STRING, length: 128)]
-    private $text;
+    private ?string $text = null;
 
     /**
      * @ORM\Column(name="state", type="string", length=128)
      */
     #[ORM\Column(name: 'state', type: Types::STRING, length: 128)]
-    private $state;
+    private ?string $state = null;
 
     /**
-     * @var \DateTime
-     *
      * @ORM\Column(name="chtext", type="datetime", nullable=true)
+     *
      * @Gedmo\Timestampable(on="change", field="text")
      */
     #[ORM\Column(name: 'chtext', type: Types::DATETIME_MUTABLE, nullable: true)]
     #[Gedmo\Timestampable(on: 'change', field: 'text')]
-    private $chText;
+    private ?\DateTime $chText = null;
 
     /**
-     * @var \DateTime
-     *
      * @ORM\Column(name="chtitle", type="datetime", nullable=true)
+     *
      * @Gedmo\Timestampable(on="change", field="title")
      */
     #[ORM\Column(name: 'chtitle', type: Types::DATETIME_MUTABLE, nullable: true)]
     #[Gedmo\Timestampable(on: 'change', field: 'title')]
-    private $chTitle;
+    private ?\DateTime $chTitle = null;
 
     /**
-     * @var \DateTime
-     *
      * @ORM\Column(name="closed", type="datetime", nullable=true)
+     *
      * @Gedmo\Timestampable(on="change", field="state", value={"Published", "Closed"})
      */
     #[ORM\Column(name: 'closed', type: Types::DATETIME_MUTABLE, nullable: true)]
     #[Gedmo\Timestampable(on: 'change', field: 'state', value: ['Published', 'Closed'])]
-    private $closed;
+    private ?\DateTime $closed = null;
 
-    /**
-     * @param \DateTime $chText
-     */
-    public function setChText($chText): void
+    public function setChText(\DateTime $chText): void
     {
         $this->chText = $chText;
     }
@@ -97,10 +87,7 @@ class TitledArticle implements Timestampable
         return $this->chText;
     }
 
-    /**
-     * @param \DateTime $chTitle
-     */
-    public function setChTitle($chTitle): void
+    public function setChTitle(\DateTime $chTitle): void
     {
         $this->chTitle = $chTitle;
     }
@@ -110,10 +97,7 @@ class TitledArticle implements Timestampable
         return $this->chTitle;
     }
 
-    /**
-     * @param \DateTime $closed
-     */
-    public function setClosed($closed): void
+    public function setClosed(\DateTime $closed): void
     {
         $this->closed = $closed;
     }
@@ -123,7 +107,7 @@ class TitledArticle implements Timestampable
         return $this->closed;
     }
 
-    public function setId($id): void
+    public function setId(?int $id): void
     {
         $this->id = $id;
     }
@@ -133,12 +117,12 @@ class TitledArticle implements Timestampable
         return $this->id;
     }
 
-    public function setText($text): void
+    public function setText(?string $text): void
     {
         $this->text = $text;
     }
 
-    public function getText()
+    public function getText(): ?string
     {
         return $this->text;
     }
@@ -153,12 +137,12 @@ class TitledArticle implements Timestampable
         return $this->title;
     }
 
-    public function setState($state): void
+    public function setState(?string $state): void
     {
         $this->state = $state;
     }
 
-    public function getState()
+    public function getState(): ?string
     {
         return $this->state;
     }

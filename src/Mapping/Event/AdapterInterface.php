@@ -21,7 +21,7 @@ use Doctrine\Persistence\ObjectManager;
  *
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
  *
- * @method LifecycleEventArgs createLifecycleEventArgsInstance(object $object, ObjectManager $manager)
+ * @method LifecycleEventArgs createLifecycleEventArgsInstance(object $object, ObjectManager $manager) @deprecated
  * @method object             getObject()
  */
 interface AdapterInterface
@@ -31,8 +31,8 @@ interface AdapterInterface
      *
      * Calls a method on the event args object.
      *
-     * @param string $method
-     * @param array  $args
+     * @param string            $method
+     * @param array<int, mixed> $args
      *
      * @return mixed
      */
@@ -65,6 +65,7 @@ interface AdapterInterface
      * @param ClassMetadata $meta
      *
      * @return string
+     *
      * @phpstan-return class-string
      */
     public function getRootObjectClass($meta);
@@ -92,7 +93,9 @@ interface AdapterInterface
      * @param ORMUnitOfWork|MongoDBUnitOfWork $uow    The UnitOfWork as provided by the object manager
      * @param object                          $object
      *
-     * @return array
+     * @return array<string, array<int, mixed>|object>
+     *
+     * @phpstan-return array<string, array{0: mixed, 1: mixed}|object>
      */
     public function getObjectChangeSet($uow, $object);
 
@@ -123,7 +126,7 @@ interface AdapterInterface
      *
      * @param ORMUnitOfWork|MongoDBUnitOfWork $uow The UnitOfWork as provided by the object manager
      *
-     * @return array
+     * @return array<int|string, object>
      */
     public function getScheduledObjectUpdates($uow);
 
@@ -132,7 +135,7 @@ interface AdapterInterface
      *
      * @param ORMUnitOfWork|MongoDBUnitOfWork $uow The UnitOfWork as provided by the object manager
      *
-     * @return array
+     * @return array<int|string, object>
      */
     public function getScheduledObjectInsertions($uow);
 
@@ -141,7 +144,7 @@ interface AdapterInterface
      *
      * @param ORMUnitOfWork|MongoDBUnitOfWork $uow The UnitOfWork as provided by the object manager
      *
-     * @return array
+     * @return array<int|string, object>
      */
     public function getScheduledObjectDeletions($uow);
 

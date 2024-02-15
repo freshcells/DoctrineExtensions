@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace Gedmo\Tests\Tree;
 
 use Doctrine\Common\EventManager;
+use Doctrine\Persistence\Proxy;
 use Gedmo\Exception\InvalidArgumentException;
 use Gedmo\Tests\Tool\BaseTestCaseORM;
 use Gedmo\Tests\Tree\Fixture\MPCategory;
@@ -27,21 +28,13 @@ use Gedmo\Tree\TreeListener;
  */
 final class MaterializedPathORMRepositoryTest extends BaseTestCaseORM
 {
-    public const CATEGORY = MPCategory::class;
-    public const CATEGORY_WITH_TRIMMED_SEPARATOR = MPCategoryWithTrimmedSeparator::class;
+    private const CATEGORY = MPCategory::class;
+    private const CATEGORY_WITH_TRIMMED_SEPARATOR = MPCategoryWithTrimmedSeparator::class;
 
-    /** @var MaterializedPathRepository */
-    protected $repo;
+    /** @var MaterializedPathRepository<MPCategory> */
+    private MaterializedPathRepository $repo;
 
-    /**
-     * @var TreeListener
-     */
-    private $listener;
-
-    /**
-     * @var array
-     */
-    private $config = [];
+    private TreeListener $listener;
 
     protected function setUp(): void
     {
@@ -55,7 +48,7 @@ final class MaterializedPathORMRepositoryTest extends BaseTestCaseORM
         $this->getDefaultMockSqliteEntityManager($evm);
 
         $meta = $this->em->getClassMetadata(self::CATEGORY);
-        $this->config = $this->listener->getConfiguration($this->em, $meta->getName());
+        $this->listener->getConfiguration($this->em, $meta->getName());
         $this->populate();
 
         $this->repo = $this->em->getRepository(self::CATEGORY);
@@ -153,14 +146,13 @@ final class MaterializedPathORMRepositoryTest extends BaseTestCaseORM
 
     public function testGetChildrenForEntityWithTrimmedSeparators(): void
     {
-        $meta = $this->em->getClassMetadata(self::CATEGORY_WITH_TRIMMED_SEPARATOR);
         $this->populate(self::CATEGORY_WITH_TRIMMED_SEPARATOR);
 
-        $this->repo = $this->em->getRepository(self::CATEGORY_WITH_TRIMMED_SEPARATOR);
-        $root = $this->repo->findOneBy(['title' => 'Food']);
+        $repo = $this->em->getRepository(self::CATEGORY_WITH_TRIMMED_SEPARATOR);
+        $root = $repo->findOneBy(['title' => 'Food']);
 
         // Get all children from the root, NOT including it
-        $result = $this->repo->getChildren($root, false, 'title');
+        $result = $repo->getChildren($root, false, 'title');
 
         static::assertCount(4, $result);
         static::assertSame('Carrots', $result[0]->getTitle());
@@ -169,7 +161,7 @@ final class MaterializedPathORMRepositoryTest extends BaseTestCaseORM
         static::assertSame('Vegitables', $result[3]->getTitle());
 
         // Get all children from the root, including it
-        $result = $this->repo->getChildren($root, false, 'title', 'asc', true);
+        $result = $repo->getChildren($root, false, 'title', 'asc', true);
 
         static::assertCount(5, $result);
         static::assertSame('Carrots', $result[0]->getTitle());
@@ -179,13 +171,13 @@ final class MaterializedPathORMRepositoryTest extends BaseTestCaseORM
         static::assertSame('Vegitables', $result[4]->getTitle());
 
         // Get direct children from the root, NOT including it
-        $result = $this->repo->getChildren($root, true, 'title', 'asc');
+        $result = $repo->getChildren($root, true, 'title', 'asc');
         static::assertCount(2, $result);
         static::assertSame('Fruits', $result[0]->getTitle());
         static::assertSame('Vegitables', $result[1]->getTitle());
 
         // Get direct children from the root, including it
-        $result = $this->repo->getChildren($root, true, 'title', 'asc', true);
+        $result = $repo->getChildren($root, true, 'title', 'asc', true);
 
         static::assertCount(3, $result);
         static::assertSame('Food', $result[0]->getTitle());
@@ -193,7 +185,7 @@ final class MaterializedPathORMRepositoryTest extends BaseTestCaseORM
         static::assertSame('Vegitables', $result[2]->getTitle());
 
         // Get ALL nodes
-        $result = $this->repo->getChildren(null, false, 'title');
+        $result = $repo->getChildren(null, false, 'title');
 
         static::assertCount(9, $result);
         static::assertSame('Best Whisky', $result[0]->getTitle());
@@ -207,7 +199,7 @@ final class MaterializedPathORMRepositoryTest extends BaseTestCaseORM
         static::assertSame('Whisky', $result[8]->getTitle());
 
         // Get ALL root nodes
-        $result = $this->repo->getChildren(null, true, 'title');
+        $result = $repo->getChildren(null, true, 'title');
 
         static::assertCount(3, $result);
         static::assertSame('Drinks', $result[0]->getTitle());
@@ -389,6 +381,7 @@ final class MaterializedPathORMRepositoryTest extends BaseTestCaseORM
         $newNode = $this->createCategory();
         $parent = $node->getParent();
 
+        static::assertInstanceOf(Proxy::class, $parent);
         static::assertFalse($parent->__isInitialized());
 
         $newNode->setTitle('New Node');
@@ -397,12 +390,8 @@ final class MaterializedPathORMRepositoryTest extends BaseTestCaseORM
         $this->em->persist($newNode);
         $this->em->flush();
 
-        // @todo: Remove the condition and the `else` block when dropping support for "phpunit/phpunit" < 9.1.
-        if (method_exists($this, 'assertMatchesRegularExpression')) {
-            static::assertMatchesRegularExpression('/Food\-\d+,New\sNode\-\d+/', $newNode->getPath());
-        } else {
-            static::assertRegExp('/Food\-\d+,New\sNode\-\d+/', $newNode->getPath());
-        }
+        static::assertMatchesRegularExpression('/Food\-\d+,New\sNode\-\d+/', $newNode->getPath());
+
         static::assertSame(2, $newNode->getLevel());
     }
 
@@ -416,15 +405,6 @@ final class MaterializedPathORMRepositoryTest extends BaseTestCaseORM
         static::assertIsArray($tree[0][$childrenIndex]);
     }
 
-    public function createCategory($class = null)
-    {
-        if (!$class) {
-            $class = self::CATEGORY;
-        }
-
-        return new $class();
-    }
-
     protected function getUsedEntityFixtures(): array
     {
         return [
@@ -433,7 +413,22 @@ final class MaterializedPathORMRepositoryTest extends BaseTestCaseORM
         ];
     }
 
-    private function populate(string $class = null): void
+    /**
+     * @phpstan-param class-string|null $class
+     */
+    private function createCategory(?string $class = null): object
+    {
+        if (!$class) {
+            $class = self::CATEGORY;
+        }
+
+        return new $class();
+    }
+
+    /**
+     * @phpstan-param class-string|null $class
+     */
+    private function populate(?string $class = null): void
     {
         $root = $this->createCategory($class);
         $root->setTitle('Food');

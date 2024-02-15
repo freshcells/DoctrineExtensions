@@ -35,14 +35,18 @@ class MixedValue
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(type="datetime")
      */
     #[Gedmo\Translatable]
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    private $date;
+    private ?\DateTime $date = null;
 
     /**
+     * @var mixed
+     *
      * @Gedmo\Translatable
+     *
      * @ORM\Column(type="custom")
      */
     #[Gedmo\Translatable]
@@ -54,21 +58,27 @@ class MixedValue
         return $this->id;
     }
 
-    public function setDate($date): void
+    public function setDate(\DateTime $date): void
     {
         $this->date = $date;
     }
 
-    public function getDate()
+    public function getDate(): ?\DateTime
     {
         return $this->date;
     }
 
+    /**
+     * @param mixed $cust
+     */
     public function setCust($cust): void
     {
         $this->cust = $cust;
     }
 
+    /**
+     * @return mixed
+     */
     public function getCust()
     {
         return $this->cust;

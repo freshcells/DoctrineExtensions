@@ -22,7 +22,10 @@ use Gedmo\Mapping\Annotation as Gedmo;
 class Post
 {
     /**
+     * @var int|null
+     *
      * @Gedmo\SortablePosition
+     *
      * @ODM\Field(type="int")
      */
     #[Gedmo\SortablePosition]
@@ -30,7 +33,10 @@ class Post
     protected $position;
 
     /**
+     * @var Category|null
+     *
      * @Gedmo\SortableGroup
+     *
      * @ODM\ReferenceOne(targetDocument="Gedmo\Tests\Sortable\Fixture\Document\Category")
      */
     #[Gedmo\SortableGroup]
@@ -38,6 +44,8 @@ class Post
     protected $category;
 
     /**
+     * @var string|null
+     *
      * @ODM\Id
      */
     #[ODM\Id]
@@ -47,9 +55,9 @@ class Post
      * @ODM\Field(type="string")
      */
     #[ODM\Field(type: MongoDBType::STRING)]
-    private $title;
+    private ?string $title = null;
 
-    public function getId()
+    public function getId(): ?string
     {
         return $this->id;
     }
@@ -59,17 +67,17 @@ class Post
         $this->title = $title;
     }
 
-    public function getTitle()
+    public function getTitle(): ?string
     {
         return $this->title;
     }
 
-    public function setPosition($position): void
+    public function setPosition(?int $position): void
     {
         $this->position = $position;
     }
 
-    public function getPosition()
+    public function getPosition(): ?int
     {
         return $this->position;
     }
@@ -79,7 +87,7 @@ class Post
         $this->category = $category;
     }
 
-    public function getCategory()
+    public function getCategory(): ?Category
     {
         return $this->category;
     }

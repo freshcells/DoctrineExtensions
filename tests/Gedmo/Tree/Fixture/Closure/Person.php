@@ -19,12 +19,13 @@ use Gedmo\Tree\Entity\Repository\ClosureTreeRepository;
 /**
  * @Gedmo\Tree(type="closure")
  * @Gedmo\TreeClosure(class="Gedmo\Tests\Tree\Fixture\Closure\PersonClosure")
+ *
  * @ORM\Entity(repositoryClass="Gedmo\Tree\Entity\Repository\ClosureTreeRepository")
  * @ORM\InheritanceType("JOINED")
  * @ORM\DiscriminatorColumn(name="discriminator", type="string")
  * @ORM\DiscriminatorMap({
- *   "user" = "User"
- *   })
+ *     "user": "User"
+ * })
  */
 #[Gedmo\Tree(type: 'closure')]
 #[Gedmo\TreeClosure(class: PersonClosure::class)]
@@ -47,44 +48,37 @@ abstract class Person
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="full_name", type="string", length=64)
      */
     #[ORM\Column(name: 'full_name', type: Types::STRING, length: 64)]
-    private $fullName;
+    private ?string $fullName = null;
 
     /**
-     * @var self|null
-     *
      * @Gedmo\TreeParent
+     *
      * @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
      * @ORM\ManyToOne(targetEntity="Person", inversedBy="children", cascade={"persist"})
      */
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children', cascade: ['persist'])]
     #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[Gedmo\TreeParent]
-    private $parent;
+    private ?Person $parent = null;
 
     /**
-     * @var int|null
-     *
      * @ORM\Column(name="level", type="integer")
+     *
      * @Gedmo\TreeLevel
      */
     #[ORM\Column(name: 'level', type: Types::INTEGER)]
     #[Gedmo\TreeLevel]
-    private $level;
+    private ?int $level = null;
 
-    /**
-     * @var string|null
-     */
-    private $name;
+    private ?string $name = null;
 
     /**
      * @var CategoryClosure[]
      */
-    private $closures = [];
+    private array $closures = [];
 
     public function getId(): ?int
     {
@@ -101,7 +95,7 @@ abstract class Person
         return $this->name;
     }
 
-    public function setParent(Category $parent = null): void
+    public function setParent(?self $parent = null): void
     {
         $this->parent = $parent;
     }

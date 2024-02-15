@@ -36,18 +36,19 @@ class TemplatedArticle extends ArticleTemplate
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(type="string", length=128)
      */
     #[Gedmo\Translatable]
     #[ORM\Column(type: Types::STRING, length: 128)]
-    private $name;
+    private ?string $name = null;
 
     public function setName(?string $name): void
     {
         $this->name = $name;
     }
 
-    public function getName()
+    public function getName(): ?string
     {
         return $this->name;
     }

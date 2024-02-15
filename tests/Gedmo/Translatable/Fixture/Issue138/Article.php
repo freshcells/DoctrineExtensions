@@ -35,19 +35,21 @@ class Article
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(length=128)
      */
     #[Gedmo\Translatable]
     #[ORM\Column(length: 128)]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(length=128)
      */
     #[Gedmo\Translatable]
     #[ORM\Column(length: 128)]
-    private $titleTest;
+    private ?string $titleTest = null;
 
     public function getId(): ?int
     {
@@ -59,17 +61,17 @@ class Article
         $this->title = $title;
     }
 
-    public function getTitle()
+    public function getTitle(): ?string
     {
         return $this->title;
     }
 
-    public function setTitleTest($titleTest): void
+    public function setTitleTest(?string $titleTest): void
     {
         $this->titleTest = $titleTest;
     }
 
-    public function getTitleTest()
+    public function getTitleTest(): ?string
     {
         return $this->titleTest;
     }

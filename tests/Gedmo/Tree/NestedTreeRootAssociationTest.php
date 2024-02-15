@@ -23,7 +23,7 @@ use Gedmo\Tree\TreeListener;
  */
 final class NestedTreeRootAssociationTest extends BaseTestCaseORM
 {
-    public const CATEGORY = RootAssociationCategory::class;
+    private const CATEGORY = RootAssociationCategory::class;
 
     protected function setUp(): void
     {
@@ -59,6 +59,41 @@ final class NestedTreeRootAssociationTest extends BaseTestCaseORM
         // Sports
         $sports = $repo->findOneBy(['title' => 'Sports']);
         static::assertSame($sports->getId(), $sports->getRoot()->getId());
+    }
+
+    public function testRemoveParentForNode(): void
+    {
+        $repo = $this->em->getRepository(self::CATEGORY);
+
+        /** @var RootAssociationCategory $food */
+        $food = $repo->findOneBy(['title' => 'Food']);
+        static::assertSame($food->getId(), $food->getRoot()->getId());
+        static::assertSame(0, $food->getLevel());
+        static::assertSame(1, $food->getLeft());
+        static::assertSame(10, $food->getRight());
+
+        /** @var RootAssociationCategory $fruits */
+        $fruits = $repo->findOneBy(['title' => 'Fruits']);
+        static::assertSame($food->getId(), $fruits->getRoot()->getId());
+        static::assertSame(1, $fruits->getLevel());
+        static::assertSame(2, $fruits->getLeft());
+        static::assertSame(3, $fruits->getRight());
+
+        // Remove node's parent, which should move out the node into a new tree
+        $fruits->setParent(null);
+        $this->em->flush();
+
+        $food = $repo->findOneBy(['title' => 'Food']);
+        static::assertSame($food->getId(), $food->getRoot()->getId());
+        static::assertSame(0, $food->getLevel());
+        static::assertSame(1, $food->getLeft());
+        static::assertSame(8, $food->getRight());
+
+        $fruits = $repo->findOneBy(['title' => 'Fruits']);
+        static::assertSame($fruits->getId(), $fruits->getRoot()->getId());
+        static::assertSame(0, $fruits->getLevel());
+        static::assertSame(1, $fruits->getLeft());
+        static::assertSame(2, $fruits->getRight());
     }
 
     protected function getUsedEntityFixtures(): array

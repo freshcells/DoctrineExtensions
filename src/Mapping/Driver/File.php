@@ -103,7 +103,9 @@ abstract class File implements Driver
      *
      * @param string $file the mapping file to load
      *
-     * @return array
+     * @return array<string, array<string, mixed>|object|null>
+     *
+     * @phpstan-return array<class-string, array<string, mixed>|object|null>
      */
     abstract protected function _loadMappingFile($file);
 
@@ -112,11 +114,13 @@ abstract class File implements Driver
      *
      * @param string $className
      *
-     * @return array|object|null
+     * @return array<string, mixed>|object|null
+     *
+     * @phpstan-param class-string $className
      */
     protected function _getMapping($className)
     {
-        //try loading mapping from original driver first
+        // try loading mapping from original driver first
         $mapping = null;
         if (null !== $this->_originalDriver) {
             if ($this->_originalDriver instanceof FileDriver) {
@@ -124,7 +128,7 @@ abstract class File implements Driver
             }
         }
 
-        //if no mapping found try to load mapping file again
+        // if no mapping found try to load mapping file again
         if (null === $mapping) {
             $yaml = $this->_loadMappingFile($this->locator->findMappingFile($className));
             $mapping = $yaml[$className];
@@ -140,6 +144,10 @@ abstract class File implements Driver
      * @param string        $name     the related object class name
      *
      * @return string related class name or empty string if does not exist
+     *
+     * @phpstan-param class-string|string $name
+     *
+     * @phpstan-return class-string|''
      */
     protected function getRelatedClassName($metadata, $name)
     {

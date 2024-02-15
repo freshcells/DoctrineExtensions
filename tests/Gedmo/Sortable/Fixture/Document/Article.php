@@ -22,7 +22,10 @@ use Gedmo\Mapping\Annotation as Gedmo;
 class Article
 {
     /**
+     * @var int|null
+     *
      * @Gedmo\SortablePosition
+     *
      * @ODM\Field(type="int")
      */
     #[Gedmo\SortablePosition]
@@ -30,6 +33,8 @@ class Article
     protected $position;
 
     /**
+     * @var string|null
+     *
      * @ODM\Id
      */
     #[ODM\Id]
@@ -39,9 +44,9 @@ class Article
      * @ODM\Field(type="string")
      */
     #[ODM\Field(type: MongoDBType::STRING)]
-    private $title;
+    private ?string $title = null;
 
-    public function getId()
+    public function getId(): ?string
     {
         return $this->id;
     }
@@ -51,17 +56,17 @@ class Article
         $this->title = $title;
     }
 
-    public function getTitle()
+    public function getTitle(): ?string
     {
         return $this->title;
     }
 
-    public function setPosition($position): void
+    public function setPosition(?int $position): void
     {
         $this->position = $position;
     }
 
-    public function getPosition()
+    public function getPosition(): ?int
     {
         return $this->position;
     }

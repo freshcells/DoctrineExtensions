@@ -35,17 +35,18 @@ class Product
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(name="title", type="string", length=128)
      */
     #[ORM\Column(name: 'title', type: Types::STRING, length: 128)]
     #[Gedmo\Translatable]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @ORM\ManyToOne(targetEntity="Category", inversedBy="products")
      */
     #[ORM\ManyToOne(targetEntity: Category::class, inversedBy: 'products')]
-    private $category;
+    private ?Category $category = null;
 
     public function getId(): ?int
     {
@@ -57,7 +58,7 @@ class Product
         $this->title = $title;
     }
 
-    public function getTitle()
+    public function getTitle(): ?string
     {
         return $this->title;
     }
@@ -67,7 +68,7 @@ class Product
         $this->category = $category;
     }
 
-    public function getCategory()
+    public function getCategory(): ?Category
     {
         return $this->category;
     }

@@ -20,9 +20,9 @@ use Gedmo\Mapping\Annotation as Gedmo;
  * @ORM\InheritanceType("JOINED")
  * @ORM\DiscriminatorColumn(name="discriminator", type="string")
  * @ORM\DiscriminatorMap({
- *      "vehicle" = "Vehicle",
- *      "car" = "Car",
- *      "bus" = "Bus"
+ *     "vehicle": "Vehicle",
+ *     "car": "Car",
+ *     "bus": "Bus"
  * })
  */
 #[ORM\Entity]
@@ -45,37 +45,39 @@ class Vehicle
 
     /**
      * @Gedmo\SortableGroup
+     *
      * @ORM\ManyToOne(targetEntity="Engine")
      */
     #[Gedmo\SortableGroup]
     #[ORM\ManyToOne(targetEntity: Engine::class)]
-    private $engine;
+    private ?Engine $engine = null;
 
     /**
      * @ORM\Column(length=128)
      */
     #[ORM\Column(length: 128)]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @Gedmo\SortablePosition
+     *
      * @ORM\Column(type="integer")
      */
     #[Gedmo\SortablePosition]
     #[ORM\Column(type: Types::INTEGER)]
-    private $sortByEngine;
+    private ?int $sortByEngine = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function setSortByEngine($sort): void
+    public function setSortByEngine(?int $sort): void
     {
         $this->sortByEngine = $sort;
     }
 
-    public function getSortByEngine()
+    public function getSortByEngine(): ?int
     {
         return $this->sortByEngine;
     }
@@ -85,7 +87,7 @@ class Vehicle
         $this->engine = $engine;
     }
 
-    public function getEngine()
+    public function getEngine(): ?Engine
     {
         return $this->engine;
     }
@@ -95,7 +97,7 @@ class Vehicle
         $this->title = $title;
     }
 
-    public function getTitle()
+    public function getTitle(): ?string
     {
         return $this->title;
     }

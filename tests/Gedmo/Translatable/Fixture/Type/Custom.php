@@ -16,8 +16,13 @@ use Doctrine\DBAL\Types\Type;
 
 class Custom extends Type
 {
-    public const NAME = 'custom';
+    private const NAME = 'custom';
 
+    /**
+     * @param mixed[] $fieldDeclaration
+     *
+     * @return string
+     */
     public function getSqlDeclaration(array $fieldDeclaration, AbstractPlatform $platform)
     {
         return $platform->getClobTypeDeclarationSQL($fieldDeclaration);
@@ -43,7 +48,7 @@ class Custom extends Type
         $value = (is_resource($value)) ? stream_get_contents($value) : $value;
         $val = unserialize($value);
         if (false === $val && 'b:0;' !== $value) {
-            new \Exception('Conversion failed');
+            throw new \Exception('Conversion failed');
         }
 
         return $val;

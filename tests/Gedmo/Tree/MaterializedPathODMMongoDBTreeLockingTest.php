@@ -25,10 +25,10 @@ use Gedmo\Tests\Tree\Fixture\Mock\TreeListenerMock;
  */
 final class MaterializedPathODMMongoDBTreeLockingTest extends BaseTestCaseMongoODM
 {
-    public const ARTICLE = Article::class;
+    private const ARTICLE = Article::class;
 
     /**
-     * @var array
+     * @var array<string, mixed>
      */
     protected $config;
 
@@ -113,7 +113,7 @@ final class MaterializedPathODMMongoDBTreeLockingTest extends BaseTestCaseMongoO
         $this->dm->flush();
     }
 
-    public function createArticle()
+    public function createArticle(): Article
     {
         $class = self::ARTICLE;
 

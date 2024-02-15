@@ -11,25 +11,32 @@ declare(strict_types=1);
 
 namespace Gedmo\Tests\Mapping\Fixture\Yaml;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
 class ClosureCategory
 {
+    /**
+     * @var int
+     */
     private $id;
 
-    private $title;
-
-    private $children;
-
-    private $parent;
-
-    private $level;
+    private ?string $title = null;
 
     /**
-     * Get id
-     *
-     * @return int $id
+     * @var Collection<int, ClosureCategory>
      */
+    private $children;
+
+    private ?ClosureCategory $parent = null;
+
+    private ?int $level = null;
+
+    public function __construct()
+    {
+        $this->children = new ArrayCollection();
+    }
+
     public function getId(): int
     {
         return $this->id;
@@ -45,50 +52,35 @@ class ClosureCategory
         return $this->title;
     }
 
-    /**
-     * Add children
-     */
-    public function addChildren(Category $children): void
+    public function addChildren(self $children): void
     {
         $this->children[] = $children;
     }
 
     /**
-     * Get children
-     *
-     * @return Collection $children
+     * @return Collection<int, self>
      */
     public function getChildren(): Collection
     {
         return $this->children;
     }
 
-    /**
-     * Set parent
-     *
-     * @param Category $parent
-     */
-    public function setParent($parent): void
+    public function setParent(self $parent): void
     {
         $this->parent = $parent;
     }
 
-    /**
-     * Get parent
-     *
-     * @return Category $parent
-     */
-    public function getParent(): Category
+    public function getParent(): self
     {
         return $this->parent;
     }
 
-    public function setLevel($level): void
+    public function setLevel(int $level): void
     {
         $this->level = $level;
     }
 
-    public function getLevel()
+    public function getLevel(): int
     {
         return $this->level;
     }

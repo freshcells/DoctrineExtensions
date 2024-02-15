@@ -23,7 +23,8 @@ use Gedmo\Tree\Entity\Repository\NestedTreeRepository;
  * @ORM\Table(name="role")
  * @ORM\InheritanceType("JOINED")
  * @ORM\DiscriminatorColumn(name="discr", type="string")
- * @ORM\DiscriminatorMap({"user" = "User", "usergroup" = "UserGroup", "userldap" = "UserLDAP"})
+ * @ORM\DiscriminatorMap({"user": "User", "usergroup": "UserGroup", "userldap": "UserLDAP"})
+ *
  * @Gedmo\Tree(type="nested")
  */
 #[ORM\Entity(repositoryClass: NestedTreeRepository::class)]
@@ -55,19 +56,19 @@ abstract class Role
     private $id;
 
     /**
-     * @var UserGroup
-     *
      * @Gedmo\TreeParent
+     *
      * @ORM\ManyToOne(targetEntity="UserGroup", inversedBy="children")
      */
     #[ORM\ManyToOne(targetEntity: UserGroup::class, inversedBy: 'children')]
     #[Gedmo\TreeParent]
-    private $parent;
+    private ?UserGroup $parent = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeLeft
+     *
      * @ORM\Column(name="lft", type="integer")
      */
     #[ORM\Column(name: 'lft', type: Types::INTEGER)]
@@ -78,6 +79,7 @@ abstract class Role
      * @var int|null
      *
      * @Gedmo\TreeRight
+     *
      * @ORM\Column(name="rgt", type="integer")
      */
     #[ORM\Column(name: 'rgt', type: Types::INTEGER)]
@@ -88,6 +90,7 @@ abstract class Role
      * @var int|null
      *
      * @Gedmo\TreeLevel
+     *
      * @ORM\Column(name="lvl", type="integer")
      */
     #[ORM\Column(name: 'lvl', type: Types::INTEGER)]
@@ -95,12 +98,10 @@ abstract class Role
     private $lvl;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="role", type="string", length=191, nullable=false)
      */
     #[ORM\Column(name: 'role', type: Types::STRING, length: 191, nullable: false)]
-    private $role;
+    private ?string $role = null;
 
     public function __construct()
     {

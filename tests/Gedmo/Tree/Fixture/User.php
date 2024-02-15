@@ -23,31 +23,25 @@ use Gedmo\Tree\Entity\Repository\NestedTreeRepository;
 #[ORM\Table(name: 'user')]
 class User extends Role
 {
-    public const PASSWORD_SALT = 'dfJko$~346958rg!DFT]AEtzserf9giq)3/TAeg;aDFa43';
+    private const PASSWORD_SALT = 'dfJko$~346958rg!DFT]AEtzserf9giq)3/TAeg;aDFa43';
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="email", type="string", unique=true)
      */
     #[ORM\Column(name: 'email', type: Types::STRING, unique: true)]
-    private $email;
+    private ?string $email = null;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="password_hash", type="string", length=32)
      */
     #[ORM\Column(name: 'password_hash', type: Types::STRING, length: 32)]
-    private $passwordHash;
+    private string $passwordHash;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="activation_code", type="string", length=12)
      */
     #[ORM\Column(name: 'activation_code', type: Types::STRING, length: 12)]
-    private $activationCode;
+    private ?string $activationCode = null;
 
     public function __construct(string $email, string $password)
     {
@@ -75,7 +69,7 @@ class User extends Role
         $num = strlen($set);
         $ret = '';
         for ($i = 0; $i < $length; ++$i) {
-            $ret .= $set[mt_rand(0, $num - 1)];
+            $ret .= $set[random_int(0, $num - 1)];
         }
 
         return $ret;
@@ -102,7 +96,7 @@ class User extends Role
         return $this;
     }
 
-    public function getPasswordHash(): ?string
+    public function getPasswordHash(): string
     {
         return $this->passwordHash;
     }

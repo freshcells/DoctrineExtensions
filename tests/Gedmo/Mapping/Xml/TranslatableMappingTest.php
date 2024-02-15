@@ -13,7 +13,9 @@ namespace Gedmo\Tests\Mapping\Xml;
 
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\EventManager;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\Driver\AnnotationDriver;
+use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\Mapping\Driver\XmlDriver;
 use Doctrine\Persistence\Mapping\Driver\MappingDriverChain;
 use Gedmo\Tests\Mapping\Fixture\Xml\Translatable;
@@ -29,22 +31,19 @@ use Gedmo\Translatable\TranslatableListener;
  */
 final class TranslatableMappingTest extends BaseTestCaseOM
 {
-    /**
-     * @var \Doctrine\ORM\EntityManager
-     */
-    private $em;
+    private EntityManager $em;
 
-    /**
-     * @var TranslatableListener
-     */
-    private $translatable;
+    private TranslatableListener $translatable;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $reader = new AnnotationReader();
-        $annotationDriver = new AnnotationDriver($reader);
+        if (PHP_VERSION_ID >= 80000) {
+            $annotationDriver = new AttributeDriver([]);
+        } else {
+            $annotationDriver = new AnnotationDriver(new AnnotationReader());
+        }
 
         $xmlDriver = new XmlDriver(__DIR__.'/../Driver/Xml');
 

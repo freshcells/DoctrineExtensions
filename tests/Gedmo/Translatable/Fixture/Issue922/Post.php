@@ -35,85 +35,89 @@ class Post
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(type="datetime", nullable=true)
      */
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     #[Gedmo\Translatable]
-    private $publishedAt;
+    private ?\DateTime $publishedAt = null;
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(type="time")
      */
     #[ORM\Column(type: Types::TIME_MUTABLE)]
     #[Gedmo\Translatable]
-    private $timestampAt;
+    private ?\DateTime $timestampAt = null;
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(type="date")
      */
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     #[Gedmo\Translatable]
-    private $dateAt;
+    private ?\DateTime $dateAt = null;
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(type="boolean")
      */
     #[ORM\Column(type: Types::BOOLEAN)]
     #[Gedmo\Translatable]
-    private $boolean;
+    private ?bool $boolean = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function setPublishedAt($publishedAt): self
+    public function setPublishedAt(?\DateTime $publishedAt): self
     {
         $this->publishedAt = $publishedAt;
 
         return $this;
     }
 
-    public function getPublishedAt()
+    public function getPublishedAt(): ?\DateTime
     {
         return $this->publishedAt;
     }
 
-    public function setTimestampAt($timestampAt): self
+    public function setTimestampAt(?\DateTime $timestampAt): self
     {
         $this->timestampAt = $timestampAt;
 
         return $this;
     }
 
-    public function getTimestampAt()
+    public function getTimestampAt(): ?\DateTime
     {
         return $this->timestampAt;
     }
 
-    public function setDateAt($dateAt): self
+    public function setDateAt(?\DateTime $dateAt): self
     {
         $this->dateAt = $dateAt;
 
         return $this;
     }
 
-    public function getDateAt()
+    public function getDateAt(): ?\DateTime
     {
         return $this->dateAt;
     }
 
-    public function setBoolean($boolean): self
+    public function setBoolean(bool $boolean): self
     {
         $this->boolean = $boolean;
 
         return $this;
     }
 
-    public function getBoolean()
+    public function getBoolean(): ?bool
     {
         return $this->boolean;
     }

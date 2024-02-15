@@ -21,6 +21,7 @@ use Gedmo\Tree\Entity\Repository\ClosureTreeRepository;
 /**
  * @Gedmo\Tree(type="closure")
  * @Gedmo\TreeClosure(class="CategoryClosure")
+ *
  * @ORM\Entity(repositoryClass="Gedmo\Tree\Entity\Repository\ClosureTreeRepository")
  */
 #[ORM\Entity(repositoryClass: ClosureTreeRepository::class)]
@@ -41,34 +42,30 @@ class Category
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="title", type="string", length=64)
      */
     #[ORM\Column(name: 'title', type: Types::STRING, length: 64)]
-    private $title;
+    private ?string $title = null;
 
     /**
-     * @var int|null
-     *
      * @ORM\Column(name="level", type="integer", nullable=true)
+     *
      * @Gedmo\TreeLevel
      */
     #[ORM\Column(name: 'level', type: Types::INTEGER, nullable: true)]
     #[Gedmo\TreeLevel]
-    private $level;
+    private ?int $level = null;
 
     /**
-     * @var self|null
-     *
      * @Gedmo\TreeParent
+     *
      * @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
      * @ORM\ManyToOne(targetEntity="Category", inversedBy="children")
      */
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
     #[ORM\JoinColumn(name: 'category_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[Gedmo\TreeParent]
-    private $parent;
+    private ?Category $parent = null;
 
     /**
      * @var Collection<int, CategoryClosure>
@@ -95,7 +92,7 @@ class Category
         return $this->title;
     }
 
-    public function setParent(self $parent = null): void
+    public function setParent(?self $parent = null): void
     {
         $this->parent = $parent;
     }
@@ -110,7 +107,7 @@ class Category
         $this->closures[] = $closure;
     }
 
-    public function setLevel($level): void
+    public function setLevel(?int $level): void
     {
         $this->level = $level;
     }

@@ -10,6 +10,7 @@
 namespace Gedmo\Mapping\Annotation;
 
 use Doctrine\Common\Annotations\Annotation;
+use Doctrine\Deprecations\Deprecation;
 use Gedmo\Mapping\Annotation\Annotation as GedmoAnnotation;
 
 /**
@@ -17,18 +18,23 @@ use Gedmo\Mapping\Annotation\Annotation as GedmoAnnotation;
  * to be user like "@ReferenceMany(type="entity", class="MyEntity", identifier="entity_id")"
  *
  * @author Bulat Shakirzyanov <mallluhuct@gmail.com>
+ *
  * @Annotation
  */
 abstract class Reference implements GedmoAnnotation
 {
+    use ForwardCompatibilityTrait;
+
     /**
      * @var string|null
+     *
      * @phpstan-var 'entity'|'document'|null
      */
     public $type;
 
     /**
      * @var string|null
+     *
      * @phpstan-var class-string|null
      */
     public $class;
@@ -49,6 +55,8 @@ abstract class Reference implements GedmoAnnotation
     public $inversedBy;
 
     /**
+     * @param array<string, mixed> $data
+     *
      * @phpstan-param class-string|null $class
      */
     public function __construct(
@@ -60,16 +68,28 @@ abstract class Reference implements GedmoAnnotation
         ?string $inversedBy = null
     ) {
         if ([] !== $data) {
-            @trigger_error(sprintf(
+            Deprecation::trigger(
+                'gedmo/doctrine-extensions',
+                'https://github.com/doctrine-extensions/DoctrineExtensions/pull/2389',
                 'Passing an array as first argument to "%s()" is deprecated. Use named arguments instead.',
                 __METHOD__
-            ), E_USER_DEPRECATED);
+            );
+
+            $args = func_get_args();
+
+            $this->type = $this->getAttributeValue($data, 'type', $args, 1, $type);
+            $this->class = $this->getAttributeValue($data, 'class', $args, 2, $class);
+            $this->identifier = $this->getAttributeValue($data, 'identifier', $args, 3, $identifier);
+            $this->mappedBy = $this->getAttributeValue($data, 'mappedBy', $args, 4, $mappedBy);
+            $this->inversedBy = $this->getAttributeValue($data, 'inversedBy', $args, 5, $inversedBy);
+
+            return;
         }
 
-        $this->type = $data['type'] ?? $type;
-        $this->class = $data['class'] ?? $class;
-        $this->identifier = $data['identifier'] ?? $identifier;
-        $this->mappedBy = $data['mappedBy'] ?? $mappedBy;
-        $this->inversedBy = $data['inversedBy'] ?? $inversedBy;
+        $this->type = $type;
+        $this->class = $class;
+        $this->identifier = $identifier;
+        $this->mappedBy = $mappedBy;
+        $this->inversedBy = $inversedBy;
     }
 }

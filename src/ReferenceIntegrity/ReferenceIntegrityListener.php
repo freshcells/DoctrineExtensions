@@ -10,7 +10,10 @@
 namespace Gedmo\ReferenceIntegrity;
 
 use Doctrine\Common\EventArgs;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Persistence\Event\LoadClassMetadataEventArgs;
+use Doctrine\Persistence\Mapping\ClassMetadata;
+use Doctrine\Persistence\ObjectManager;
 use Gedmo\Exception\InvalidMappingException;
 use Gedmo\Exception\ReferenceIntegrityStrictException;
 use Gedmo\Mapping\MappedEventSubscriber;
@@ -20,6 +23,8 @@ use Gedmo\ReferenceIntegrity\Mapping\Validator;
  * The ReferenceIntegrity listener handles the reference integrity on related documents
  *
  * @author Evert Harmeling <evert.harmeling@freshheads.com>
+ *
+ * @final since gedmo/doctrine-extensions 3.11
  */
 class ReferenceIntegrityListener extends MappedEventSubscriber
 {
@@ -39,17 +44,22 @@ class ReferenceIntegrityListener extends MappedEventSubscriber
      *
      * @param LoadClassMetadataEventArgs $eventArgs
      *
+     * @phpstan-param LoadClassMetadataEventArgs<ClassMetadata<object>, ObjectManager> $eventArgs
+     *
      * @return void
      */
     public function loadClassMetadata(EventArgs $eventArgs)
     {
-        $ea = $this->getEventAdapter($eventArgs);
-        $this->loadMetadataForObjectClass($ea->getObjectManager(), $eventArgs->getClassMetadata());
+        $this->loadMetadataForObjectClass($eventArgs->getObjectManager(), $eventArgs->getClassMetadata());
     }
 
     /**
      * Looks for referenced objects being removed
      * to nullify the relation or throw an exception
+     *
+     * @param LifecycleEventArgs $args
+     *
+     * @phpstan-param LifecycleEventArgs<ObjectManager> $args
      *
      * @return void
      */
@@ -72,6 +82,8 @@ class ReferenceIntegrityListener extends MappedEventSubscriber
                         if (!isset($fieldMapping['mappedBy'])) {
                             throw new InvalidMappingException(sprintf("Reference '%s' on '%s' should have 'mappedBy' option defined", $property, $meta->getName()));
                         }
+
+                        assert(class_exists($fieldMapping['targetDocument']));
 
                         $subMeta = $om->getClassMetadata($fieldMapping['targetDocument']);
 
@@ -96,6 +108,8 @@ class ReferenceIntegrityListener extends MappedEventSubscriber
                         if (!isset($fieldMapping['mappedBy'])) {
                             throw new InvalidMappingException(sprintf("Reference '%s' on '%s' should have 'mappedBy' option defined", $property, $meta->getName()));
                         }
+
+                        assert(class_exists($fieldMapping['targetDocument']));
 
                         $subMeta = $om->getClassMetadata($fieldMapping['targetDocument']);
 

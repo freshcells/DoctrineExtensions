@@ -21,6 +21,8 @@ use Gedmo\ReferenceIntegrity\Mapping\Validator;
  * extension.
  *
  * @author Evert Harmeling <evert.harmeling@freshheads.com>
+ *
+ * @internal
  */
 class Annotation extends AbstractAnnotationDriver
 {
@@ -58,5 +60,7 @@ class Annotation extends AbstractAnnotationDriver
                 $config['referenceIntegrity'][$property] = $referenceIntegrity->value;
             }
         }
+
+        return $config;
     }
 }

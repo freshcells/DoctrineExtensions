@@ -22,6 +22,8 @@ use Gedmo\Mapping\Driver\File;
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
  *
  * @deprecated since gedmo/doctrine-extensions 3.5, will be removed in version 4.0.
+ *
+ * @internal
  */
 class Yaml extends File implements Driver
 {
@@ -54,13 +56,13 @@ class Yaml extends File implements Driver
 
         if (isset($mapping['fields'])) {
             foreach ($mapping['fields'] as $field => $fieldMapping) {
-                $this->buildFieldConfiguration($field, $fieldMapping, $config);
+                $config = $this->buildFieldConfiguration($field, $fieldMapping, $config);
             }
         }
 
         if (isset($mapping['attributeOverride'])) {
             foreach ($mapping['attributeOverride'] as $field => $overrideMapping) {
-                $this->buildFieldConfiguration($field, $overrideMapping, $config);
+                $config = $this->buildFieldConfiguration($field, $overrideMapping, $config);
             }
         }
 
@@ -69,6 +71,8 @@ class Yaml extends File implements Driver
                 throw new InvalidMappingException("Translatable does not support composite identifiers in class - {$meta->getName()}");
             }
         }
+
+        return $config;
     }
 
     protected function _loadMappingFile($file)
@@ -76,7 +80,13 @@ class Yaml extends File implements Driver
         return \Symfony\Component\Yaml\Yaml::parse(file_get_contents($file));
     }
 
-    private function buildFieldConfiguration(string $field, array $fieldMapping, array &$config): void
+    /**
+     * @param array<string, mixed> $fieldMapping
+     * @param array<string, mixed> $config
+     *
+     * @return array<string, mixed>
+     */
+    private function buildFieldConfiguration(string $field, array $fieldMapping, array $config): array
     {
         if (isset($fieldMapping['gedmo'])) {
             if (in_array('translatable', $fieldMapping['gedmo'], true) || isset($fieldMapping['gedmo']['translatable'])) {
@@ -87,5 +97,7 @@ class Yaml extends File implements Driver
                 }
             }
         }
+
+        return $config;
     }
 }

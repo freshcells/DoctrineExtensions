@@ -20,6 +20,8 @@ use Gedmo\Mapping\Driver\AbstractAnnotationDriver;
  * extension.
  *
  * @author David Buchmann <mail@davidbu.ch>
+ *
+ * @internal
  */
 class Annotation extends AbstractAnnotationDriver
 {
@@ -31,7 +33,7 @@ class Annotation extends AbstractAnnotationDriver
     /**
      * List of types which are valid for blame
      *
-     * @var array
+     * @var string[]
      */
     protected $validTypes = [
         'one',
@@ -44,9 +46,9 @@ class Annotation extends AbstractAnnotationDriver
         $class = $this->getMetaReflectionClass($meta);
         // property annotations
         foreach ($class->getProperties() as $property) {
-            if ($meta->isMappedSuperclass && !$property->isPrivate() ||
-                $meta->isInheritedField($property->name) ||
-                isset($meta->associationMappings[$property->name]['inherited'])
+            if ($meta->isMappedSuperclass && !$property->isPrivate()
+                || $meta->isInheritedField($property->name)
+                || isset($meta->associationMappings[$property->name]['inherited'])
             ) {
                 continue;
             }
@@ -86,5 +88,7 @@ class Annotation extends AbstractAnnotationDriver
                 $config[$blameable->on][] = $field;
             }
         }
+
+        return $config;
     }
 }

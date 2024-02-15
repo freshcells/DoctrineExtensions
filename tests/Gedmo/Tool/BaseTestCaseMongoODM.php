@@ -24,6 +24,8 @@ use Gedmo\SoftDeleteable\SoftDeleteableListener;
 use Gedmo\Timestampable\TimestampableListener;
 use Gedmo\Translatable\TranslatableListener;
 use MongoDB\Client;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 /**
  * Base test case contains common mock objects
@@ -32,10 +34,10 @@ use MongoDB\Client;
  *
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
  */
-abstract class BaseTestCaseMongoODM extends \PHPUnit\Framework\TestCase
+abstract class BaseTestCaseMongoODM extends TestCase
 {
     /**
-     * @var DocumentManager
+     * @var DocumentManager|null
      */
     protected $dm;
 
@@ -66,13 +68,13 @@ abstract class BaseTestCaseMongoODM extends \PHPUnit\Framework\TestCase
     {
         $client = new Client($_ENV['MONGODB_SERVER'], [], ['typeMap' => DocumentManager::CLIENT_TYPEMAP]);
 
-        $config = $config ?: $this->getMockAnnotatedConfig();
-        $evm = $evm ?: $this->getEventManager();
+        $config ??= $this->getMockAnnotatedConfig();
+        $evm ??= $this->getEventManager();
 
         return $this->dm = DocumentManager::create($client, $config, $evm);
     }
 
-    protected function getDefaultDocumentManager(EventManager $evm = null): DocumentManager
+    protected function getDefaultDocumentManager(?EventManager $evm = null): DocumentManager
     {
         return $this->getMockDocumentManager($evm, $this->getDefaultConfiguration());
     }
@@ -81,13 +83,13 @@ abstract class BaseTestCaseMongoODM extends \PHPUnit\Framework\TestCase
      * DocumentManager mock object with
      * annotation mapping driver
      */
-    protected function getMockMappedDocumentManager(EventManager $evm = null, $config = null): DocumentManager
+    protected function getMockMappedDocumentManager(?EventManager $evm = null, ?Configuration $config = null): DocumentManager
     {
-        $conn = $this->getMockBuilder('Doctrine\\MongoDB\\Connection')->getMock();
+        $conn = $this->createStub(Client::class);
 
-        $config = $config ? $config : $this->getMockAnnotatedConfig();
+        $config ??= $this->getMockAnnotatedConfig();
 
-        $this->dm = DocumentManager::create($conn, $config, $evm ?: $this->getEventManager());
+        $this->dm = DocumentManager::create($conn, $config, $evm ?? $this->getEventManager());
 
         return $this->dm;
     }
@@ -97,6 +99,10 @@ abstract class BaseTestCaseMongoODM extends \PHPUnit\Framework\TestCase
      */
     protected function getMetadataDriverImplementation(): MappingDriver
     {
+        if (PHP_VERSION_ID >= 80000) {
+            return new AttributeDriver();
+        }
+
         return new AnnotationDriver($_ENV['annotation_reader']);
     }
 
@@ -115,6 +121,7 @@ abstract class BaseTestCaseMongoODM extends \PHPUnit\Framework\TestCase
         $config->setAutoGenerateProxyClasses(Configuration::AUTOGENERATE_EVAL);
         $config->setAutoGenerateHydratorClasses(Configuration::AUTOGENERATE_EVAL);
         $config->setMetadataDriverImpl($this->getMetadataDriverImplementation());
+        $config->setMetadataCache(new ArrayAdapter());
 
         return $config;
     }
@@ -131,6 +138,7 @@ abstract class BaseTestCaseMongoODM extends \PHPUnit\Framework\TestCase
         $config->setAutoGenerateProxyClasses(Configuration::AUTOGENERATE_EVAL);
         $config->setAutoGenerateHydratorClasses(Configuration::AUTOGENERATE_EVAL);
         $config->setMetadataDriverImpl($this->getMetadataDefaultDriverImplementation());
+        $config->setMetadataCache(new ArrayAdapter());
 
         return $config;
     }

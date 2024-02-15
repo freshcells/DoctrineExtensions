@@ -12,8 +12,8 @@ declare(strict_types=1);
 namespace Gedmo\Tests\Timestampable;
 
 use Doctrine\Common\EventManager;
-use Doctrine\ORM\Proxy\Proxy;
-use Gedmo\Tests\Mapping\Fixture\Xml\Timestampable;
+use Doctrine\Persistence\Proxy;
+use Gedmo\Tests\Clock;
 use Gedmo\Tests\Timestampable\Fixture\Article;
 use Gedmo\Tests\Timestampable\Fixture\Author;
 use Gedmo\Tests\Timestampable\Fixture\Comment;
@@ -28,16 +28,19 @@ use Gedmo\Timestampable\TimestampableListener;
  */
 final class TimestampableTest extends BaseTestCaseORM
 {
-    public const ARTICLE = Article::class;
-    public const COMMENT = Comment::class;
-    public const TYPE = Type::class;
+    private const ARTICLE = Article::class;
+    private const COMMENT = Comment::class;
+    private const TYPE = Type::class;
 
     protected function setUp(): void
     {
         parent::setUp();
 
+        $listener = new TimestampableListener();
+        $listener->setClock(new Clock());
+
         $evm = new EventManager();
-        $evm->addEventSubscriber(new TimestampableListener());
+        $evm->addEventSubscriber($listener);
 
         $this->getDefaultMockSqliteEntityManager($evm);
     }
@@ -121,7 +124,7 @@ final class TimestampableTest extends BaseTestCaseORM
         $sport->setAuthor($author);
 
         $sportComment = $this->em->getRepository(self::COMMENT)->findOneBy(['message' => 'hello']);
-        static::assertNotNull($scm = $sportComment->getModified());
+        static::assertNotNull($sportComment->getModified());
         static::assertNull($sportComment->getClosed());
 
         $sportComment->setStatus(1);

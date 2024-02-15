@@ -23,6 +23,8 @@ use Gedmo\Mapping\Driver\AbstractAnnotationDriver;
  * extension.
  *
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
+ *
+ * @internal
  */
 class Annotation extends AbstractAnnotationDriver
 {
@@ -45,15 +47,19 @@ class Annotation extends AbstractAnnotationDriver
     /**
      * List of types which are valid for slug and sluggable fields
      *
-     * @var array
+     * @var string[]
      */
     protected $validTypes = [
         'string',
         'text',
         'integer',
         'int',
+        'date',
+        'date_immutable',
         'datetime',
+        'datetime_immutable',
         'datetimetz',
+        'datetimetz_immutable',
         'citext',
     ];
 
@@ -62,9 +68,9 @@ class Annotation extends AbstractAnnotationDriver
         $class = $this->getMetaReflectionClass($meta);
         // property annotations
         foreach ($class->getProperties() as $property) {
-            if ($meta->isMappedSuperclass && !$property->isPrivate() ||
-                $meta->isInheritedField($property->name) ||
-                isset($meta->associationMappings[$property->name]['inherited'])
+            if ($meta->isMappedSuperclass && !$property->isPrivate()
+                || $meta->isInheritedField($property->name)
+                || isset($meta->associationMappings[$property->name]['inherited'])
             ) {
                 continue;
             }
@@ -80,6 +86,8 @@ class Annotation extends AbstractAnnotationDriver
                 }
             }
         }
+
+        return $config;
     }
 
     /**
@@ -120,6 +128,8 @@ class Annotation extends AbstractAnnotationDriver
     }
 
     /**
+     * @param array<string, mixed> $config
+     *
      * @return array<string, array<string, mixed>>
      */
     private function retrieveSlug(ClassMetadata $meta, array &$config, \ReflectionProperty $property, ?string $fieldNamePrefix = null): array

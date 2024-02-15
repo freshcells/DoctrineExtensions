@@ -13,6 +13,7 @@ use Doctrine\Common\Proxy\Proxy;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
+use Gedmo\Exception\RuntimeException;
 use Gedmo\Mapping\Event\Adapter\ORM as BaseAdapterORM;
 use Gedmo\Tool\Wrapper\AbstractWrapper;
 use Gedmo\Translatable\Entity\MappedSuperclass\AbstractPersonalTranslation;
@@ -79,7 +80,10 @@ final class ORM extends BaseAdapterORM implements TranslatableAdapter
                 $dql .= ' AND t.object = :object';
 
                 $q = $em->createQuery($dql);
-                $q->setParameters(compact('object', 'locale'));
+                $q->setParameters([
+                    'object' => $object,
+                    'locale' => $locale,
+                ]);
                 $result = $q->getArrayResult();
             }
         } else {
@@ -92,7 +96,11 @@ final class ORM extends BaseAdapterORM implements TranslatableAdapter
             $dql .= ' AND t.objectClass = :objectClass';
             // fetch results
             $q = $em->createQuery($dql);
-            $q->setParameters(compact('objectId', 'locale', 'objectClass'));
+            $q->setParameters([
+                'objectId' => $objectId,
+                'locale' => $locale,
+                'objectClass' => $objectClass,
+            ]);
             $result = $q->getArrayResult();
         }
 
@@ -134,8 +142,10 @@ final class ORM extends BaseAdapterORM implements TranslatableAdapter
                 'trans.locale = :locale',
                 'trans.field = :field'
             )
+            ->setParameter('locale', $locale)
+            ->setParameter('field', $field)
         ;
-        $qb->setParameters(compact('locale', 'field'));
+
         if ($this->usesPersonalTranslation($translationClass)) {
             $qb->andWhere('trans.object = :object');
             if ($wrapped->getIdentifier()) {
@@ -151,13 +161,8 @@ final class ORM extends BaseAdapterORM implements TranslatableAdapter
         }
         $q = $qb->getQuery();
         $q->setMaxResults(1);
-        $result = $q->getResult();
 
-        if ($result) {
-            return array_shift($result);
-        }
-
-        return null;
+        return $q->getOneOrNullResult();
     }
 
     public function removeAssociatedTranslations(AbstractWrapper $wrapped, $transClass, $objectClass)
@@ -196,7 +201,7 @@ final class ORM extends BaseAdapterORM implements TranslatableAdapter
 
         $table = $meta->getTableName();
         if (!$em->getConnection()->insert($table, $data)) {
-            throw new \Gedmo\Exception\RuntimeException('Failed to insert new Translation record');
+            throw new RuntimeException('Failed to insert new Translation record');
         }
     }
 
@@ -229,6 +234,8 @@ final class ORM extends BaseAdapterORM implements TranslatableAdapter
      *
      * @param mixed  $key       foreign key value
      * @param string $className translation class name
+     *
+     * @phpstan-param class-string $className translation class name
      *
      * @return int|string transformed foreign key
      */

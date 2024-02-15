@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace Gedmo\Tests\Translatable\Fixture\Issue114;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
@@ -35,17 +37,25 @@ class Category
 
     /**
      * @Gedmo\Translatable
+     *
      * @ORM\Column(name="title", type="string", length=128)
      */
     #[Gedmo\Translatable]
     #[ORM\Column(name: 'title', type: Types::STRING, length: 128)]
-    private $title;
+    private ?string $title = null;
 
     /**
+     * @var Collection<int, Article>
+     *
      * @ORM\OneToMany(targetEntity="Article", mappedBy="category", cascade={"persist", "remove"})
      */
     #[ORM\OneToMany(targetEntity: Article::class, mappedBy: 'category', cascade: ['persist', 'remove'])]
     private $articles;
+
+    public function __construct()
+    {
+        $this->articles = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -57,7 +67,7 @@ class Category
         $this->title = $title;
     }
 
-    public function getTitle()
+    public function getTitle(): ?string
     {
         return $this->title;
     }
@@ -67,7 +77,10 @@ class Category
         $this->articles[] = $article;
     }
 
-    public function getArticles()
+    /**
+     * @return Collection<int, Article>
+     */
+    public function getArticles(): Collection
     {
         return $this->articles;
     }

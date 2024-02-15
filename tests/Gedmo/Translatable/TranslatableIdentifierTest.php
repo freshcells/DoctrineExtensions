@@ -24,11 +24,12 @@ use Gedmo\Translatable\TranslatableListener;
  */
 final class TranslatableIdentifierTest extends BaseTestCaseORM
 {
-    public const FIXTURE = StringIdentifier::class;
-    public const TRANSLATION = Translation::class;
+    private const FIXTURE = StringIdentifier::class;
+    private const TRANSLATION = Translation::class;
 
-    private $testObjectId;
-    private $translatableListener;
+    private ?string $testObjectId = null;
+
+    private TranslatableListener $translatableListener;
 
     protected function setUp(): void
     {

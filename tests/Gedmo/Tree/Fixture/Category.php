@@ -21,6 +21,7 @@ use Gedmo\Tree\Node as NodeInterface;
 
 /**
  * @ORM\Entity(repositoryClass="Gedmo\Tree\Entity\Repository\NestedTreeRepository")
+ *
  * @Gedmo\Tree(type="nested")
  */
 #[ORM\Entity(repositoryClass: NestedTreeRepository::class)]
@@ -40,17 +41,16 @@ class Category implements NodeInterface
     private $id;
 
     /**
-     * @var string|null
-     *
      * @ORM\Column(name="title", type="string", length=64)
      */
     #[ORM\Column(name: 'title', type: Types::STRING, length: 64)]
-    private $title;
+    private ?string $title = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeLeft
+     *
      * @ORM\Column(name="lft", type="integer")
      */
     #[ORM\Column(name: 'lft', type: Types::INTEGER)]
@@ -61,6 +61,7 @@ class Category implements NodeInterface
      * @var int|null
      *
      * @Gedmo\TreeRight
+     *
      * @ORM\Column(name="rgt", type="integer")
      */
     #[ORM\Column(name: 'rgt', type: Types::INTEGER)]
@@ -68,23 +69,23 @@ class Category implements NodeInterface
     private $rgt;
 
     /**
-     * @var self|null
-     *
      * @Gedmo\TreeParent
+     *
      * @ORM\ManyToOne(targetEntity="Category", inversedBy="children")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
+     *     @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
      * })
      */
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
     #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[Gedmo\TreeParent]
-    private $parentId;
+    private ?Category $parentId = null;
 
     /**
      * @var int|null
      *
      * @Gedmo\TreeLevel
+     *
      * @ORM\Column(name="lvl", type="integer")
      */
     #[ORM\Column(name: 'lvl', type: Types::INTEGER)]
@@ -97,7 +98,7 @@ class Category implements NodeInterface
      * @ORM\OneToMany(targetEntity="Category", mappedBy="parent")
      */
     #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parent')]
-    private $children;
+    private Collection $children;
 
     /**
      * @var Collection<int, Article>
@@ -105,7 +106,9 @@ class Category implements NodeInterface
      * @ORM\OneToMany(targetEntity="Article", mappedBy="category")
      */
     #[ORM\OneToMany(targetEntity: Article::class, mappedBy: 'article')]
-    private $comments;
+    private Collection $comments;
+
+    private ?NodeInterface $sibling = null;
 
     public function __construct()
     {
@@ -151,5 +154,15 @@ class Category implements NodeInterface
     public function getLevel(): ?int
     {
         return $this->level;
+    }
+
+    public function setSibling(NodeInterface $node): void
+    {
+        $this->sibling = $node;
+    }
+
+    public function getSibling(): ?NodeInterface
+    {
+        return $this->sibling;
     }
 }
